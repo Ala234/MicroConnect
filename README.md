@@ -74,43 +74,6 @@ Navigate through:
 
 ---
 
-## 📁 Project Structure
-``` bash
-MicroConnect/
-├── public/
-├── src/
-│   ├── assets/
-│   │   ├── images/
-│   │   ├── icons/
-│   │   └── fonts/
-│   │
-│   ├── components/
-│   │   ├── common/
-│   │   └── layout/
-│   │
-│   ├── pages/
-│   │   ├── auth/
-│   │   ├── brand/
-│   │   ├── influencer/
-│   │   ├── admin/
-│   │   └── common/
-│   │
-│   ├── routes/
-│   ├── layouts/
-│   ├── styles/
-│   ├── data/
-│   │
-│   ├── App.jsx
-│   └── main.jsx
-│
-├── .gitignore
-├── README.md
-├── package.json
-├── vite.config.js
-└── index.html
-```
----
-
 ## 🔐 Environment Variables
 
 No API keys are currently required for this front-end prototype. Future integration may require `.env` configuration (not included in the repository for security reasons).
