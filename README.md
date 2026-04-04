@@ -1,16 +1,137 @@
-# React + Vite
+# MicroConnect
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 📌 Project Description
+MicroConnect is a web platform that connects brands with influencers to collaborate efficiently. The system provides different interfaces for each user type (Brand, Influencer, Admin) with a focus on usability and clean UI design based on Figma prototypes.
 
-Currently, two official plugins are available:
+This project is developed as part of SWE363 course (Phase 3: Requirement & Prototyping).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## ⚙️ Setup & Installation
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Follow these steps to run the project locally:
 
-## Expanding the ESLint configuration
+### 1. Clone the repository
+```bash
+git clone https://github.com/Ala234/MicroConnect.git
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 2. Navigate to the project folder
+```bash
+cd MicroConnect
+```
+
+### 3. Install dependencies
+```bash
+npm install
+```
+
+### 4. Run the development server
+```bash
+npm run dev
+```
+
+### 5. Open in browser
+http://localhost:5173/
+
+
+---
+
+## ⚠️ Windows Users (PowerShell Issue)
+
+If you encounter this error:
+npm.ps1 cannot be loaded because running scripts is disabled
+
+Run this command in PowerShell:
+``` bash
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+Then restart the terminal and try again.
+
+---
+
+## 💻 Usage
+
+Open the project in the browser using:
+http://localhost:5173
+
+Navigate through:
+-  the Login page  
+- Choose their role (Brand / Influencer / Admin)  
+- Based on the role, they are redirected to their dashboard  
+- This is a front-end prototype (no real backend yet)
+
+---
+
+## 👥 Team Members
+
+| Name | ID | Role |
+|------|----|------|
+| Sarah Almas | 202261060 | Data Base Contributor, Developer |
+| Alanoud Aldaej | 202279560 | Leader, Developer |
+| Yaqin Shawkan | 202255400 | Developer, Testing |
+| Zainab Almusailiem | 202251360 | Developer, Documentation |
+
+---
+
+## 📁 Project Structure
+``` bash
+MicroConnect/
+├── public/
+├── src/
+│   ├── assets/
+│   │   ├── images/
+│   │   ├── icons/
+│   │   └── fonts/
+│   │
+│   ├── components/
+│   │   ├── common/
+│   │   └── layout/
+│   │
+│   ├── pages/
+│   │   ├── auth/
+│   │   ├── brand/
+│   │   ├── influencer/
+│   │   ├── admin/
+│   │   └── common/
+│   │
+│   ├── routes/
+│   ├── layouts/
+│   ├── styles/
+│   ├── data/
+│   │
+│   ├── App.jsx
+│   └── main.jsx
+│
+├── .gitignore
+├── README.md
+├── package.json
+├── vite.config.js
+└── index.html
+```
+---
+
+## 🔐 Environment Variables
+
+No API keys are currently required for this front-end prototype. Future integration may require `.env` configuration (not included in the repository for security reasons).
+
+---
+
+## 📝 Notes
+
+- This project is a front-end prototype only  
+- Backend functionality will be implemented in future phases  
+- The UI is based on a Figma design created during Phase 3  
+
+---
+
+## 📎 Figma Design
+
+https://www.figma.com/design/KvuD9GvGwQqJ2pm5ABmph4/Phase-3?node-id=1-2700&p=f&t=eys0C4cBkKrESFWg-0
+
+---
+
+## 📌 Status
+
+✅ Completed: Front-End Prototype (Milestone 4)  
+🔄 Next: Backend Integration
