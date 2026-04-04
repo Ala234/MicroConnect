@@ -77,37 +77,70 @@ Navigate through:
 ## 📁 Project Structure
 ``` bash
 MicroConnect/
-├── public/
-├── src/
-│   ├── assets/
-│   │   ├── images/
-│   │   ├── icons/
-│   │   └── fonts/
+├── front-end/
+│   ├── public/
+│   ├── src/
+│   │   ├── assets/
+│   │   │   ├── images/
+│   │   │   ├── icons/
+│   │   │   └── fonts/
+│   │   │
+│   │   ├── components/
+│   │   │   ├── common/
+│   │   │   │   ├── Button.jsx
+│   │   │   │   ├── Input.jsx
+│   │   │   │   └── Card.jsx
+│   │   │   │
+│   │   │   └── layout/
+│   │   │       ├── Navbar.jsx
+│   │   │       ├── Sidebar.jsx
+│   │   │       └── Footer.jsx
+│   │   │
+│   │   ├── data/
+│   │   │   └── mockUsers.js
+│   │   │
+│   │   ├── layouts/
+│   │   │   ├── AuthLayout.jsx
+│   │   │   └── MainLayout.jsx
+│   │   │
+│   │   ├── pages/
+│   │   │   ├── auth/
+│   │   │   │   ├── Login.jsx
+│   │   │   │   ├── ChooseRole.jsx
+│   │   │   │   └── CreateAccount.jsx
+│   │   │   │
+│   │   │   ├── brand/
+│   │   │   │   └── BrandDashboard.jsx
+│   │   │   │
+│   │   │   ├── influencer/
+│   │   │   │   └── InfluencerDashboard.jsx
+│   │   │   │
+│   │   │   ├── admin/
+│   │   │   │   └── AdminDashboard.jsx
+│   │   │   │
+│   │   │   └── common/
+│   │   │       └── NotFound.jsx
+│   │   │
+│   │   ├── routes/
+│   │   │   └── AppRoutes.jsx
+│   │   │
+│   │   ├── styles/
+│   │   │   ├── global.css
+│   │   │   ├── variables.css
+│   │   │   └── responsive.css
+│   │   │
+│   │   ├── App.jsx
+│   │   └── main.jsx
 │   │
-│   ├── components/
-│   │   ├── common/
-│   │   └── layout/
-│   │
-│   ├── pages/
-│   │   ├── auth/
-│   │   ├── brand/
-│   │   ├── influencer/
-│   │   ├── admin/
-│   │   └── common/
-│   │
-│   ├── routes/
-│   ├── layouts/
-│   ├── styles/
-│   ├── data/
-│   │
-│   ├── App.jsx
-│   └── main.jsx
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── vite.config.js
+│   └── eslint.config.js
 │
+├── back-end/
 ├── .gitignore
-├── README.md
-├── package.json
-├── vite.config.js
-└── index.html
+└── README.md
 ```
 ---
 
