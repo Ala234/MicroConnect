@@ -1,0 +1,16 @@
+:root {
+  --bg-main: #070b1f;
+  --bg-soft: #0a1028;
+
+  --navy-1: #0b1334;
+  --navy-2: #101a42;
+
+  --primary-1: #6d5dfc;
+  --primary-2: #4aa8ff;
+  --primary-gradient: linear-gradient(90deg, #6d5dfc, #4aa8ff);
+
+  --text-main: #ffffff;
+  --text-soft: #b8c2e4;
+
+  --border-soft: rgba(255,255,255,0.08);
+}
