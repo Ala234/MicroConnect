@@ -12,6 +12,7 @@ import "./styles/responsive.css";
 import "./styles/global.css";
 import "./styles/variables.css";
 import CreateCampaign from "./pages/brand/createCampaign";  
+import DeleteCampaign from "./pages/brand/DeleteCampaign";
 function App() {
   return (
     <BrowserRouter>
@@ -26,6 +27,7 @@ function App() {
         <Route path="/verification" element={<Verification />} />
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/create-campaign" element={<CreateCampaign />} />
+        <Route path="/delete-campaign" element={<DeleteCampaign />} />
       </Routes>
     </BrowserRouter>
   );
