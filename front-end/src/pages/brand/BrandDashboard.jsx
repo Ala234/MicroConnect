@@ -88,6 +88,20 @@ export default function BrandDashboard() {
                   <div className="dashboard-progress">
                     <div style={{ width: "80%" }}></div>
                   </div>
+                  <div className="dashboard-campaign-actions">
+                    <button
+                      className="campaign-chip-btn edit"
+                      onClick={() => navigate("/create-campaign")}
+                    >
+                      Review
+                    </button>
+                    <button
+                      className="campaign-chip-btn delete"
+                      onClick={() => navigate("/delete-campaign")}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
 
