@@ -1,12 +1,15 @@
- 
 import "../../styles/dashboard.css";
-import springImg from "../../assets/images/spring.png";
-import winterImg from "../../assets/images/winter.png";
-import skinCareImg from "../../assets/images/skincare.png";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getCampaigns } from "../../data/mockCampaigns";
 
 export default function BrandDashboard() {
   const navigate = useNavigate();
+  const [campaigns, setCampaigns] = useState([]);
+
+  useEffect(() => {
+    setCampaigns(getCampaigns());
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -63,87 +66,53 @@ export default function BrandDashboard() {
               </div>
 
               <button
-        className="dashboard-primary-btn"
-         onClick={() => navigate("/create-campaign")}
-        >
-        + Create Campaign
-        </button>
+                className="dashboard-primary-btn"
+                onClick={() => navigate("/create-campaign")}
+              >
+                + Create Campaign
+              </button>
             </div>
 
             <div className="dashboard-campaign-list">
-              <div className="dashboard-campaign-item">
-                <img
-                  className="dashboard-campaign-thumb"
-                  src={springImg}
-                  alt="Spring Collection"
-                />
+              {campaigns.map((campaign) => (
+                <div className="dashboard-campaign-item" key={campaign.id}>
+                  <img
+                    className="dashboard-campaign-thumb"
+                    src={campaign.imageSrc}
+                    alt={campaign.name}
+                  />
 
-                <div className="dashboard-campaign-content">
-                  <h3>Spring Collection</h3>
-                  <div className="dashboard-campaign-meta">
-                    <span>12 Influencers</span>
-                    <span>45k Reach</span>
-                    <span>80% Complete</span>
-                  </div>
-                  <div className="dashboard-progress">
-                    <div style={{ width: "80%" }}></div>
-                  </div>
-                  <div className="dashboard-campaign-actions">
-                    <button
-                      className="campaign-chip-btn edit"
-                      onClick={() => navigate("/create-campaign")}
-                    >
-                      Review
-                    </button>
-                    <button
-                      className="campaign-chip-btn delete"
-                      onClick={() => navigate("/delete-campaign")}
-                    >
-                      Delete
-                    </button>
+                  <div className="dashboard-campaign-content">
+                    <h3>{campaign.name}</h3>
+                    <div className="dashboard-campaign-meta">
+                      <span>{campaign.influencersCount} Influencers</span>
+                      <span>{campaign.reach} Reach</span>
+                      <span>{campaign.progress}% Complete</span>
+                    </div>
+                    <div className="dashboard-progress">
+                      <div style={{ width: `${campaign.progress}%` }}></div>
+                    </div>
+                    <div className="dashboard-campaign-actions">
+                      <button
+                        className="campaign-chip-btn edit"
+                        onClick={() =>
+                          navigate(`/create-campaign?id=${campaign.id}`)
+                        }
+                      >
+                        Review
+                      </button>
+                      <button
+                        className="campaign-chip-btn delete"
+                        onClick={() =>
+                          navigate(`/delete-campaign?id=${campaign.id}`)
+                        }
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="dashboard-campaign-item">
-                <img
-                  className="dashboard-campaign-thumb"
-                  src={winterImg}
-                  alt="Winter Collection"
-                />
-
-                <div className="dashboard-campaign-content">
-                  <h3>Winter Collection</h3>
-                  <div className="dashboard-campaign-meta">
-                    <span>20 Influencers</span>
-                    <span>60k Reach</span>
-                    <span>50% Complete</span>
-                  </div>
-                  <div className="dashboard-progress">
-                    <div style={{ width: "50%" }}></div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="dashboard-campaign-item">
-                <img
-                  className="dashboard-campaign-thumb"
-                  src={skinCareImg}
-                  alt="Skin Care Collection"
-                />
-
-                <div className="dashboard-campaign-content">
-                  <h3>Skin Care Collection</h3>
-                  <div className="dashboard-campaign-meta">
-                    <span>0 Influencers</span>
-                    <span>0 Reach</span>
-                    <span>0% Complete</span>
-                  </div>
-                  <div className="dashboard-progress">
-             <div style={{ width: "0%" }}></div>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
