@@ -46,7 +46,7 @@ Run this command in PowerShell:
 ``` bash
 Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 ```
-Then restart the terminal and try again.
+Then try again.
 
 ---
 
