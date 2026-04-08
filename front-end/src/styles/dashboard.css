@@ -892,7 +892,8 @@
 }
 
 /* STATUS COLORS */
-.status-active {
+.status-active,
+.status-resolved {
   color: #22c55e;
 }
 
@@ -972,4 +973,52 @@
 
 .status-accepted {
   color: #f59e0b;
+}
+
+/* Align disputes card to the right */
+.disputes-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  gap: 12px;
+}
+
+/* remove extra spacing from reused class */
+.no-margin {
+  margin-bottom: 0;
+}
+
+/* keep card compact */
+.single-card {
+  grid-template-columns: 1fr !important;
+  max-width: 220px;
+}
+
+.disputes-cards {
+  display: flex;
+  gap: 12px;
+}
+
+/* smaller cards */
+.dashboard-stat-card.small {
+  padding: 14px 16px;
+  min-width: 120px;
+  text-align: center;
+}
+
+/* CONTENT REVIEW TABLE */
+.users-table td, 
+.users-table th {
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.users-table td:nth-child(3) {
+  max-width: 400px;
+}
+
+.users-table td {
+  line-height: 1.4;
+  font-size: 14px;
 }
