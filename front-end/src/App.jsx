@@ -7,6 +7,8 @@ import Admin from "./pages/admin/AdminDashboard";
 import ManageUsers from "./pages/admin/ManageUsers";
 import Contracts from "./pages/admin/Contracts"; 
 import Transactions from "./pages/admin/Transactions";
+import Disputes from "./pages/admin/Disputes";
+import ContentReview from "./pages/admin/ContentReview";
 import Login from "./pages/auth/Login";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Verification from "./pages/auth/Verification";
@@ -34,6 +36,8 @@ function App() {
         <Route path="/ManageUsers" element={<ManageUsers />} />
         <Route path="/contracts" element={<Contracts />} />
         <Route path="/transactions" element={<Transactions />} />
+        <Route path="/disputes" element={<Disputes />} />
+        <Route path="/ContentReview" element={<ContentReview />} />
       </Routes>
     </BrowserRouter>
   );
