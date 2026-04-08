@@ -2,6 +2,10 @@ import "../../styles/dashboard.css";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
+import SaraBImage from "../../assets/images/SaraBlogs-Profile.jpg";
+import AhmedFImage from "../../assets/images/AhmedFit-Profile.jpg";
+import LisaSImage from "../../assets/images/Lisa-Profile.jpg";
+
 import {
   LineChart,
   Line,
@@ -89,7 +93,7 @@ export default function AdminDashboard() {
                   onClick={() => navigate(item.path)}
                 >
                   <span className="icon">{item.icon}</span>
-                  {!collapsed && <span>{item.name}</span>}
+                  {!collapsed && <span><strong>{item.name}</strong></span>}
                 </li>
               ))}
             </ul>
@@ -144,19 +148,40 @@ export default function AdminDashboard() {
 
                 <div className="dashboard-campaign-item">
                   <div className="dashboard-campaign-content">
-                    <h4>SaraBlogs</h4>
+                    <img
+                      src={SaraBImage}
+                      alt="SaraBlogs Profile"
+                      className="influencer-img"
+                    />
+                  </div>
+                  <div className="dashboard-campaign-content">
+                  <h4>SaraBlogs</h4>
                   </div>
                 </div>
 
                 <div className="dashboard-campaign-item">
                   <div className="dashboard-campaign-content">
-                    <h4>AhmedFit</h4>
+                    <img
+                      src={AhmedFImage}
+                      alt="AhmedFit Profile"
+                      className="influencer-img"
+                    />
+                  </div>
+                  <div className="dashboard-campaign-content">
+                  <h4>AhmedFit</h4>
                   </div>
                 </div>
 
                 <div className="dashboard-campaign-item">
                   <div className="dashboard-campaign-content">
-                    <h4>LisaStyle</h4>
+                    <img
+                      src={LisaSImage}
+                      alt="LisaStyle Profile"
+                      className="influencer-img"
+                    />
+                  </div>
+                  <div className="dashboard-campaign-content">
+                  <h4>LisaStyle</h4>
                   </div>
                 </div>
 

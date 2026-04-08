@@ -4,6 +4,7 @@ import Home from "./pages/common/Home";
 import Brand from "./pages/brand/BrandDashboard";
 import Influencer from "./pages/influencer/InfluencerDashboard";
 import Admin from "./pages/admin/AdminDashboard";
+import ManageUsers from "./pages/admin/ManageUsers";
 import Login from "./pages/auth/Login";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Verification from "./pages/auth/Verification";
@@ -28,6 +29,7 @@ function App() {
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/create-campaign" element={<CreateCampaign />} />
         <Route path="/delete-campaign" element={<DeleteCampaign />} />
+        <Route path="/ManageUsers" element={<ManageUsers />} />
       </Routes>
     </BrowserRouter>
   );
