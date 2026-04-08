@@ -963,3 +963,13 @@
 .action-menu .danger {
   color: #ff6b6b;
 }
+
+/* CONTRACT STATUS COLORS */
+
+.status-completed {
+  color: #4f7cff;
+}
+
+.status-accepted {
+  color: #f59e0b;
+}
