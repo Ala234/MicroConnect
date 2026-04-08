@@ -722,3 +722,112 @@
     min-width: 0;
   }
 }
+
+/* ===== ADMIN LAYOUT ===== */
+/* ===== GRID LAYOUT ===== */
+.admin-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+  transition: all 0.3s ease;
+}
+
+/* COLLAPSED STATE (KEY FEATURE) */
+.dashboard-page.collapsed .admin-layout {
+  grid-template-columns: 70px 1fr;
+}
+
+/* ===== SIDEBAR ===== */
+.admin-sidebar {
+  width: 220px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 18px;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: all 0.3s ease;
+}
+
+.admin-sidebar.collapsed {
+  width: 70px;
+  padding: 14px 10px;
+}
+
+/* MENU */
+.admin-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.admin-sidebar li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  color: #b8c2e4;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.admin-sidebar li:hover {
+  background: rgba(255,255,255,0.08);
+  color: white;
+}
+
+/* ACTIVE */
+.admin-sidebar li.active {
+  background: linear-gradient(90deg, #6d5dfc, #4aa8ff);
+  color: white;
+}
+
+/* ICON */
+.admin-sidebar .icon {
+  font-size: 18px;
+}
+
+/* CENTER ICON WHEN COLLAPSED */
+.admin-sidebar.collapsed li {
+  justify-content: center;
+}
+
+/* TOGGLE BUTTON */
+.sidebar-toggle {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+/* ===== CONTENT ===== */
+.admin-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: all 0.3s ease;
+}
+
+/* CHART CONTAINER */
+.chart-container {
+  width: 100%;
+  height: 320px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 18px;
+  padding: 20px;
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(8px);
+}
+
+/* OPTIONAL: Improve tooltip look */
+.recharts-tooltip-wrapper {
+  outline: none;
+}
+
+.recharts-default-tooltip {
+  background: #1e1e2f !important;
+  border: none !important;
+  border-radius: 10px !important;
+  color: white !important;
+}
