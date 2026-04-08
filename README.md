@@ -18,7 +18,7 @@ git clone https://github.com/Ala234/MicroConnect.git
 
 ### 2. Navigate to the project folder
 ```bash
-cd MicroConnect
+cd .\front-end
 ```
 
 ### 3. Install dependencies
