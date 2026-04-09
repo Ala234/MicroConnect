@@ -19,6 +19,7 @@ import "./styles/variables.css";
 import CreateCampaign from "./pages/brand/createCampaign";  
 import DeleteCampaign from "./pages/brand/DeleteCampaign";
 import ContractPage from "./pages/brand/ContractPage";
+import InfluencerProfile from "./pages/brand/InfluencerProfile";
 function App() {
   return (
     <BrowserRouter>
@@ -35,6 +36,7 @@ function App() {
         <Route path="/create-campaign" element={<CreateCampaign />} />
         <Route path="/delete-campaign" element={<DeleteCampaign />} />
         <Route path="/contracts" element={<ContractPage />} />
+        <Route path="/influencer-profile" element={<InfluencerProfile />} />
         <Route path="/ManageUsers" element={<ManageUsers />} />
         <Route path="/AdminContracts" element={<Contracts />} />
         <Route path="/transactions" element={<Transactions />} />
