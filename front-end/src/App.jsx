@@ -18,6 +18,7 @@ import "./styles/global.css";
 import "./styles/variables.css";
 import CreateCampaign from "./pages/brand/createCampaign";  
 import DeleteCampaign from "./pages/brand/DeleteCampaign";
+import ContractPage from "./pages/brand/ContractPage";
 function App() {
   return (
     <BrowserRouter>
@@ -33,6 +34,7 @@ function App() {
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/create-campaign" element={<CreateCampaign />} />
         <Route path="/delete-campaign" element={<DeleteCampaign />} />
+        <Route path="/contracts" element={<ContractPage />} />
         <Route path="/ManageUsers" element={<ManageUsers />} />
         <Route path="/contracts" element={<Contracts />} />
         <Route path="/transactions" element={<Transactions />} />

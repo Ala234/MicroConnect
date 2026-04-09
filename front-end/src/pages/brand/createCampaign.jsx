@@ -1,9 +1,13 @@
- import "../../styles/dashboard.css";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import "../../styles/dashboard.css";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { getCampaignById, saveCampaign } from "../../data/mockCampaigns";
 
 export default function CreateCampaign() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const campaignId = searchParams.get("id");
+  const isSaved = searchParams.get("saved") === "1";
 
   const [campaignName, setCampaignName] = useState("");
   const [campaignObjectives, setCampaignObjectives] = useState("");
@@ -15,6 +19,43 @@ export default function CreateCampaign() {
   const [targetAudience, setTargetAudience] = useState("");
   const [contentType, setContentType] = useState("");
   const [platforms, setPlatforms] = useState([]);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    if (!campaignId) {
+      setCampaignName("");
+      setCampaignObjectives("");
+      setCampaignDescription("");
+      setStartDate("");
+      setEndDate("");
+      setBudget("");
+      setInfluencersCount("");
+      setTargetAudience("");
+      setContentType("");
+      setPlatforms([]);
+      setErrorMessage("");
+      return;
+    }
+
+    const campaign = getCampaignById(campaignId);
+
+    if (!campaign) {
+      setErrorMessage("This campaign could not be found.");
+      return;
+    }
+
+    setErrorMessage("");
+    setCampaignName(campaign.name);
+    setCampaignObjectives(campaign.objective);
+    setCampaignDescription(campaign.description);
+    setStartDate(campaign.startDate);
+    setEndDate(campaign.endDate);
+    setBudget(campaign.budget);
+    setInfluencersCount(campaign.influencersCount);
+    setTargetAudience(campaign.targetAudience);
+    setContentType(campaign.contentType);
+    setPlatforms(campaign.platforms);
+  }, [campaignId]);
 
   const togglePlatform = (platform) => {
     setPlatforms((prev) =>
@@ -25,10 +66,32 @@ export default function CreateCampaign() {
   };
 
   const handleCreateCampaign = () => {
-    const newCampaign = {
-      campaignName,
-      campaignObjectives,
-      campaignDescription,
+    if (
+      !campaignName ||
+      !campaignObjectives ||
+      !campaignDescription ||
+      !startDate ||
+      !endDate ||
+      !budget ||
+      !influencersCount ||
+      !targetAudience ||
+      !contentType ||
+      platforms.length === 0
+    ) {
+      setErrorMessage("Please complete all campaign fields before saving.");
+      return;
+    }
+
+    if (endDate < startDate) {
+      setErrorMessage("End date must be after the start date.");
+      return;
+    }
+
+    const savedCampaign = saveCampaign({
+      id: campaignId || undefined,
+      name: campaignName,
+      objective: campaignObjectives,
+      description: campaignDescription,
       startDate,
       endDate,
       budget,
@@ -36,9 +99,14 @@ export default function CreateCampaign() {
       targetAudience,
       contentType,
       platforms,
-    };
+      imageKey: "spring",
+    });
 
-    console.log("New Campaign:", newCampaign);
+    if (campaignId) {
+      navigate(`/create-campaign?id=${savedCampaign.id}&saved=1`);
+      return;
+    }
+
     navigate("/brand");
   };
 
@@ -54,9 +122,23 @@ export default function CreateCampaign() {
 
         <div className="dashboard-section create-campaign-page">
           <div className="campaign-form-header">
-            <h2>Create Campaign</h2>
-            <p>Fill in the campaign details below.</p>
+            <h2>{campaignId ? "Edit Campaign" : "Create Campaign"}</h2>
+            <p>
+              {campaignId
+                ? "Update the campaign details and save your changes."
+                : "Fill in the campaign details below."}
+            </p>
           </div>
+
+          {errorMessage ? (
+            <div className="campaign-flow-banner error">{errorMessage}</div>
+          ) : null}
+
+          {isSaved ? (
+            <div className="campaign-flow-banner success">
+              Campaign changes were saved successfully.
+            </div>
+          ) : null}
 
           <div className="campaign-form-grid">
             <div className="campaign-form-group full-width">
@@ -188,7 +270,9 @@ export default function CreateCampaign() {
           <div className="campaign-form-actions">
             <button
               className="dashboard-logout"
-              onClick={() => navigate("/brand")}
+              onClick={() =>
+                navigate(campaignId ? `/delete-campaign?id=${campaignId}` : "/brand")
+              }
             >
               Cancel
             </button>
@@ -197,7 +281,7 @@ export default function CreateCampaign() {
               className="dashboard-primary-btn"
               onClick={handleCreateCampaign}
             >
-              Create Campaign
+              {campaignId ? "Save Changes" : "Create Campaign"}
             </button>
           </div>
         </div>
