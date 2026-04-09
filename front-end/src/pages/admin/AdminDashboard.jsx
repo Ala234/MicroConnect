@@ -37,7 +37,7 @@ export default function AdminDashboard() {
   const menu = [
     { name: "Dashboard", path: "/admin", icon: "🏠" },
     { name: "Manage Users", path: "/ManageUsers", icon: "👥" },
-    { name: "Contracts", path: "/contracts", icon: "📄" },
+    { name: "Contracts", path: "/AdminContracts", icon: "📄" },
     { name: "Transactions", path: "/transactions", icon: "💰" },
     { name: "Disputes", path: "/disputes", icon: "⚠️" },
     { name: "Content Review", path: "/ContentReview", icon: "📝" },

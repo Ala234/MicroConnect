@@ -36,7 +36,7 @@ function App() {
         <Route path="/delete-campaign" element={<DeleteCampaign />} />
         <Route path="/contracts" element={<ContractPage />} />
         <Route path="/ManageUsers" element={<ManageUsers />} />
-        <Route path="/contracts" element={<Contracts />} />
+        <Route path="/AdminContracts" element={<Contracts />} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/disputes" element={<Disputes />} />
         <Route path="/ContentReview" element={<ContentReview />} />
