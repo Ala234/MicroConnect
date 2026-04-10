@@ -109,15 +109,7 @@ export default function BrandDashboard() {
                       <div style={{ width: `${campaign.progress}%` }}></div>
                     </div>
                     <div className="dashboard-campaign-actions">
-                      <button
-                        className="campaign-chip-btn edit"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          navigate(`/create-campaign?id=${campaign.id}`);
-                        }}
-                      >
-                        Edit
-                      </button>
+                       
                     </div>
                   </div>
                 </div>
