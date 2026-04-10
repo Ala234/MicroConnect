@@ -16,6 +16,10 @@ export default function BrandDashboard() {
     navigate("/login");
   };
 
+  const openCampaignPage = (campaignId) => {
+    navigate(`/delete-campaign?id=${campaignId}`);
+  };
+
   return (
     <div className="dashboard-page">
       <div className="dashboard-shell">
@@ -75,7 +79,19 @@ export default function BrandDashboard() {
 
             <div className="dashboard-campaign-list">
               {campaigns.map((campaign) => (
-                <div className="dashboard-campaign-item" key={campaign.id}>
+                <div
+                  className="dashboard-campaign-item dashboard-campaign-item-clickable"
+                  key={campaign.id}
+                  onClick={() => openCampaignPage(campaign.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openCampaignPage(campaign.id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
                   <img
                     className="dashboard-campaign-thumb"
                     src={campaign.imageSrc}
@@ -93,22 +109,7 @@ export default function BrandDashboard() {
                       <div style={{ width: `${campaign.progress}%` }}></div>
                     </div>
                     <div className="dashboard-campaign-actions">
-                      <button
-                        className="campaign-chip-btn edit"
-                        onClick={() =>
-                          navigate(`/create-campaign?id=${campaign.id}`)
-                        }
-                      >
-                        Review
-                      </button>
-                      <button
-                        className="campaign-chip-btn delete"
-                        onClick={() =>
-                          navigate(`/delete-campaign?id=${campaign.id}`)
-                        }
-                      >
-                        Delete
-                      </button>
+                       
                     </div>
                   </div>
                 </div>

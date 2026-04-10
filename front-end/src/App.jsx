@@ -16,6 +16,9 @@ import Contracts from "./pages/admin/Contracts";
 import Transactions from "./pages/admin/Transactions";
 import Disputes from "./pages/admin/Disputes";
 import ContentReview from "./pages/admin/ContentReview";
+import CommissionEarnings from "./pages/admin/CommissionEarnings";
+import AdminReports from "./pages/admin/Reports";
+import AdminSettings from "./pages/admin/Settings";
 import Login from "./pages/auth/Login";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Verification from "./pages/auth/Verification";
@@ -26,6 +29,7 @@ import CreateCampaign from "./pages/brand/createCampaign";
 import DeleteCampaign from "./pages/brand/DeleteCampaign";
 import ContractPage from "./pages/brand/ContractPage";
 
+import InfluencerProfile from "./pages/brand/InfluencerProfile";
 function App() {
   return (
     <BrowserRouter>
@@ -49,11 +53,15 @@ function App() {
         <Route path="/create-campaign" element={<CreateCampaign />} />
         <Route path="/delete-campaign" element={<DeleteCampaign />} />
         <Route path="/contracts" element={<ContractPage />} />
+        <Route path="/influencer-profile" element={<InfluencerProfile />} />
         <Route path="/ManageUsers" element={<ManageUsers />} />
         <Route path="/AdminContracts" element={<Contracts />} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/disputes" element={<Disputes />} />
         <Route path="/ContentReview" element={<ContentReview />} />
+        <Route path="/CommissionEarnings" element={<CommissionEarnings />} />
+        <Route path="/reports" element={<AdminReports />} />
+        <Route path="/settings" element={<AdminSettings />} />
       </Routes>
     </BrowserRouter>
   );

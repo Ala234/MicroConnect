@@ -13,39 +13,51 @@ import {
   FiUsers,
   FiX,
 } from "react-icons/fi";
-import SaraBImage from "../../assets/images/SaraBlogs-Profile.jpg";
-import LisaSImage from "../../assets/images/Lisa-Profile.jpg";
 import { deleteCampaignById, getCampaignById } from "../../data/mockCampaigns";
+import { getInfluencerById } from "../../data/mockInfluencers";
 import BrandChatModal from "./BrandChatModal";
 
 const initialApplicants = [
   {
-    id: "sarah-johnson",
-    name: "Sarah Johnson",
-    role: "Fashion & Lifestyle",
-    rating: "4.9",
-    engagement: "8.5%",
-    age: "28",
-    followers: "45.2K",
-    imageSrc: SaraBImage,
+    ...getInfluencerById("sarah-johnson"),
     status: "pending",
     flow: "approval",
   },
   {
-    id: "mia-carter",
-    name: "Mia Carter",
-    role: "Lifestyle & Travel",
-    rating: "4.8",
-    engagement: "10.5%",
-    age: "25",
-    followers: "38.2K",
-    imageSrc: LisaSImage,
+    ...getInfluencerById("mia-carter"),
     status: "contract",
     flow: "contract",
   },
 ];
 
 const filterLabels = ["Followers", "Age Group", "Target Aud", "Engagement lvl"];
+
+const getNumericValue = (value) => Number.parseFloat(String(value).replace(/[^0-9.]/g, ""));
+
+const getAgeRangeFromAudience = (targetAudience) => {
+  const matches = String(targetAudience || "").match(/\d+/g);
+
+  if (!matches || matches.length < 2) {
+    return null;
+  }
+
+  const [minAge, maxAge] = matches.map(Number);
+
+  return {
+    minAge,
+    maxAge,
+  };
+};
+
+const matchesTargetAudience = (applicant, campaign) => {
+  const audienceTerms = String(campaign?.targetAudience || "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((term) => term.length > 3);
+  const applicantText = `${applicant.role} ${applicant.name}`.toLowerCase();
+
+  return audienceTerms.some((term) => applicantText.includes(term));
+};
 
 const getDurationLabel = (startDate, endDate) => {
   if (!startDate || !endDate) {
@@ -69,6 +81,7 @@ export default function DeleteCampaign() {
   const campaignId = searchParams.get("id");
   const [campaign, setCampaign] = useState(null);
   const [applicants, setApplicants] = useState(initialApplicants);
+  const [activeFilters, setActiveFilters] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [activeChatApplicant, setActiveChatApplicant] = useState(null);
   const [banner, setBanner] = useState(null);
@@ -99,6 +112,14 @@ export default function DeleteCampaign() {
 
   const showBanner = (title, text) => {
     setBanner({ title, text });
+  };
+
+  const toggleFilter = (label) => {
+    setActiveFilters((currentFilters) =>
+      currentFilters.includes(label)
+        ? currentFilters.filter((item) => item !== label)
+        : [...currentFilters, label]
+    );
   };
 
   const handleApplicantAction = (applicantId, nextStatus) => {
@@ -169,6 +190,36 @@ export default function DeleteCampaign() {
   if (!campaign) {
     return null;
   }
+
+  const filteredApplicants = applicants.filter((applicant) =>
+    activeFilters.every((filterLabel) => {
+      if (filterLabel === "Followers") {
+        return getNumericValue(applicant.followers) >= 40;
+      }
+
+      if (filterLabel === "Age Group") {
+        const ageRange = getAgeRangeFromAudience(campaign.targetAudience);
+
+        if (!ageRange) {
+          return true;
+        }
+
+        const age = getNumericValue(applicant.age);
+
+        return age >= ageRange.minAge && age <= ageRange.maxAge;
+      }
+
+      if (filterLabel === "Target Aud") {
+        return matchesTargetAudience(applicant, campaign);
+      }
+
+      if (filterLabel === "Engagement lvl") {
+        return getNumericValue(applicant.engagement) >= 9;
+      }
+
+      return true;
+    })
+  );
 
   const metrics = [
     {
@@ -311,12 +362,19 @@ export default function DeleteCampaign() {
             <div className="campaign-review-toolbar">
               <div className="campaign-review-section-title">
                 <h2>Influencers Application</h2>
-                <p>{applicants.length} Applications Found</p>
+                <p>{filteredApplicants.length} Applications Found</p>
               </div>
 
               <div className="campaign-filter-row">
                 {filterLabels.map((label) => (
-                  <button className="campaign-filter-chip" key={label} type="button">
+                  <button
+                    className={`campaign-filter-chip ${
+                      activeFilters.includes(label) ? "active" : ""
+                    }`}
+                    key={label}
+                    type="button"
+                    onClick={() => toggleFilter(label)}
+                  >
                     {label}
                   </button>
                 ))}
@@ -324,7 +382,7 @@ export default function DeleteCampaign() {
             </div>
 
             <div className="campaign-application-list">
-              {applicants.map((applicant) => (
+              {filteredApplicants.map((applicant) => (
                 <div className="campaign-application-card" key={applicant.id}>
                   <div className="campaign-application-profile">
                     <img src={applicant.imageSrc} alt={applicant.name} />
@@ -351,10 +409,19 @@ export default function DeleteCampaign() {
                       <span>Followers</span>
                       <strong>{applicant.followers}</strong>
                     </div>
-                  </div>
+                    </div>
 
                   <div className="campaign-application-actions stacked">
-                    <button className="campaign-view-btn">View Profile</button>
+                    <button
+                      className="campaign-view-btn"
+                      onClick={() =>
+                        navigate(
+                          `/influencer-profile?campaignId=${campaignId}&influencer=${applicant.id}`
+                        )
+                      }
+                    >
+                      View Profile
+                    </button>
                     {applicant.status !== "pending" &&
                     applicant.status !== "contract" ? (
                       <span className={`campaign-decision-badge ${applicant.status}`}>
@@ -409,6 +476,12 @@ export default function DeleteCampaign() {
                   </div>
                 </div>
               ))}
+
+              {filteredApplicants.length === 0 ? (
+                <div className="campaign-filter-empty">
+                  No influencers match the selected filters.
+                </div>
+              ) : null}
             </div>
           </div>
 
