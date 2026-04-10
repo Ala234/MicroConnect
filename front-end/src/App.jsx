@@ -9,6 +9,9 @@ import Contracts from "./pages/admin/Contracts";
 import Transactions from "./pages/admin/Transactions";
 import Disputes from "./pages/admin/Disputes";
 import ContentReview from "./pages/admin/ContentReview";
+import CommissionEarnings from "./pages/admin/CommissionEarnings";
+import AdminReports from "./pages/admin/Reports";
+import AdminSettings from "./pages/admin/Settings";
 import Login from "./pages/auth/Login";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Verification from "./pages/auth/Verification";
@@ -40,6 +43,9 @@ function App() {
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/disputes" element={<Disputes />} />
         <Route path="/ContentReview" element={<ContentReview />} />
+        <Route path="/CommissionEarnings" element={<CommissionEarnings />} />
+        <Route path="/reports" element={<AdminReports />} />
+        <Route path="/settings" element={<AdminSettings />} />
       </Routes>
     </BrowserRouter>
   );
