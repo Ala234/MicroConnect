@@ -133,6 +133,7 @@ No API keys are currently required for this front-end prototype. Future integrat
 
 https://www.figma.com/design/KvuD9GvGwQqJ2pm5ABmph4/Phase-3?node-id=1-2700&p=f&t=eys0C4cBkKrESFWg-0
 
+> Note: The design matches the Figma prototype, with only slight changes in background and button colors, which were allowed by the instructor.
 ---
 
 ## 📌 Status
