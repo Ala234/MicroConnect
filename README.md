@@ -53,11 +53,49 @@ Then try again.
 Open the project in the browser using:
 http://localhost:5173
 
-Navigate through:
--  the Login page  
-- Choose their role (Brand / Influencer / Admin)  
-- Based on the role, they are redirected to their dashboard  
-- This is a front-end prototype (no real backend yet)
+
+This project is a front-end application, so the data is currently handled using a mock data file (`mockCampaigns`, mockUsers, etc.) instead of a real API or backend.
+
+### Demo Access
+
+You can explore the system in two ways:
+
+#### 1. Login
+- Use any of the predefined users stored in the mock data.
+
+Demo Accounts:
+```bash 
+export const users = [
+  {
+    email: "brand@test.com",
+    password: "1234",
+    role: "brand",
+  },
+  {
+    email: "influencer@test.com",
+    password: "1234",
+    role: "influencer",
+  },
+  {
+    email: "admin@test.com",
+    password: "1234",
+    role: "admin",
+  },
+];
+```
+#### 2. Create Account
+- You can also create a new account directly from the UI.
+- Enter any:
+  - Username
+  - Email
+  - Password
+- Then select your role:
+  - Brand
+  - Influencer
+
+After creating an account, you will be able to access the dashboard and interact with the application features.
+
+> Note: Since this is a front-end only project, no real authentication is performed and all data is stored temporarily using mock data.
 
 ---
 
@@ -65,10 +103,12 @@ Navigate through:
 
 | Name | ID | Role |
 |------|----|------|
-| Sarah Almas | 202261060 | Data Base Contributor, Developer |
-| Alanoud Aldaej | 202279560 | Leader, Developer |
-| Yaqin Shawkan | 202255400 | Developer, Testing |
-| Zainab Almusailiem | 202251360 | Developer, Documentation |
+| Sarah Almas | 202261060 | Influncer |
+| Alanoud Aldaej | 202279560 | Home ,Authentication (login, create account, validity), Brand and Readme file |
+| Yaqin Shawkan | 202255400 | Admin |
+| Zainab Almusailiem | 202251360 | Brand |
+
+> Note: The work was distributed equally among team members based on the nature and complexity of tasks. All contributions were balanced to ensure fairness in terms of actual work effort.
 
 ---
 
