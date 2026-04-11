@@ -6,6 +6,37 @@ MicroConnect is a web platform that connects brands with influencers to collabor
 This project is developed as part of SWE363 course (Phase 3: Requirement & Prototyping).
 
 ---
+## 📌 Project Structure
+
+The project is organized into several main folders to keep the code clean and maintainable:
+
+### 📁 assets/
+This folder contains all  images used throughout the application.
+
+### 📁 data/
+This folder includes mock data files (e.g., users, campaigns).  
+> Since this is a front-end project, the application relies on mock data instead of a real backend or API.
+
+### 📁 pages/
+This folder contains the main pages of the application.
+
+Inside this folder, the pages are organized based on user roles:
+
+- Brand
+- Influencer
+- Admin
+- auth (authentication)
+- common (home page)
+
+Each role has its own folder that contains the related pages and features specific to that user type.
+
+### 📁 components/
+This folder contains reusable UI components that are used across different pages, helping to avoid code duplication and improve consistency.
+
+### 📁 styles/
+This folder includes shared styling files (CSS) used across the application, such as global styles and common design elements.
+
+> This structure helps in organizing the project efficiently and makes it easier to scale and maintain.
 
 ## ⚙️ Setup & Installation
 
