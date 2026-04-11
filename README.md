@@ -8,7 +8,7 @@ This project is developed as part of SWE363 course (Phase 3: Requirement & Proto
 ---
 ## 📌 Project Structure
 
-The project is organized into several main folders to keep the code clean and maintainable:
+The project is organized into several main folders to keep the code clean and maintainable, inside **📁 src /** you will see:
 
 ### 📁 assets/
 This folder contains all  images used throughout the application.
@@ -28,10 +28,7 @@ Inside this folder, the pages are organized based on user roles:
 - auth (authentication)
 - common (home page)
 
-Each role has its own folder that contains the related pages and features specific to that user type.
-
-### 📁 components/
-This folder contains reusable UI components that are used across different pages, helping to avoid code duplication and improve consistency.
+> Each role has its own folder that contains the related pages and features specific to that user type.
 
 ### 📁 styles/
 This folder includes shared styling files (CSS) used across the application, such as global styles and common design elements.
