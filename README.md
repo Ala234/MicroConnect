@@ -110,6 +110,9 @@ After creating an account, you will be able to access the dashboard and interact
 
 > Note: The work was distributed equally among team members based on the nature and complexity of tasks. All contributions were balanced to ensure fairness in terms of actual work effort.
 
+> Note on Contributions: Sara worked on a separate branch and her work was later merged into the main branch. As a result, her name may not appear clearly in the commit history on the main branch, to view her contributions, please check the commit history and look for merge commits from her branch, where her work is included.
+
+
 ---
 
 ## 🔐 Environment Variables
