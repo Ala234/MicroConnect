@@ -1,11 +1,14 @@
 import "../../styles/dashboard.css";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useState, useMemo } from "react";
+import Sidebar from "./Sidebar";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid, Legend,
+} from "recharts";
 
 export default function Transactions() {
   const navigate = useNavigate();
-  const location = useLocation();
-
   const [collapsed, setCollapsed] = useState(
     localStorage.getItem("sidebar") === "true"
   );
@@ -15,56 +18,65 @@ export default function Transactions() {
     navigate("/login");
   };
 
-  const [search, setSearch] = useState("");
-  const [openMenu, setOpenMenu] = useState(null);
+  const [search, setSearch]       = useState("");
+  const [statusFilter, setStatus] = useState("All");
+  const [monthFilter, setMonth]   = useState("All");
 
-  useEffect(() => {
-    localStorage.setItem("sidebar", collapsed);
-  }, [collapsed]);
+  const allTransactions = useMemo(() => [
+    { id: "#TXN001", brand: "NikeArabia", influencer: "SaraBlogs",  campaign: "Ramadan Collection", amount: 4200,  commission: 10, date: "Apr 28", month: "Apr", status: "Completed" },
+    { id: "#TXN002", brand: "GlowCo",    influencer: "AhmedFit",   campaign: "Summer Glow",        amount: 2800,  commission: 10, date: "Apr 27", month: "Apr", status: "Completed" },
+    { id: "#TXN003", brand: "LuxBrand",  influencer: "LisaStyle",  campaign: "Eid Special Drop",   amount: 6500,  commission: 12, date: "Apr 26", month: "Apr", status: "Pending"   },
+    { id: "#TXN004", brand: "TechStore", influencer: "SaraBlogs",  campaign: "Tech Review 2026",   amount: 1900,  commission: 10, date: "Apr 25", month: "Apr", status: "Completed" },
+    { id: "#TXN005", brand: "FoodHub",   influencer: "AhmedFit",   campaign: "Food Week",          amount: 3100,  commission: 10, date: "Apr 24", month: "Apr", status: "Pending"   },
+    { id: "#TXN006", brand: "NikeArabia",influencer: "LisaStyle",  campaign: "Spring Drop",        amount: 5200,  commission: 12, date: "Mar 30", month: "Mar", status: "Completed" },
+    { id: "#TXN007", brand: "GlowCo",    influencer: "SaraBlogs",  campaign: "Glow Up Campaign",   amount: 3800,  commission: 10, date: "Mar 22", month: "Mar", status: "Completed" },
+    { id: "#TXN008", brand: "LuxBrand",  influencer: "AhmedFit",   campaign: "Luxury Fitness",     amount: 7100,  commission: 12, date: "Mar 15", month: "Mar", status: "Failed"    },
+    { id: "#TXN009", brand: "TechStore", influencer: "LisaStyle",  campaign: "Gadget Review",      amount: 2400,  commission: 10, date: "Feb 28", month: "Feb", status: "Completed" },
+    { id: "#TXN010", brand: "FoodHub",   influencer: "SaraBlogs",  campaign: "Recipe Series",      amount: 1600,  commission: 10, date: "Feb 20", month: "Feb", status: "Completed" },
+  ], []);
 
-  const menu = [
-    { name: "Dashboard", path: "/admin", icon: "🏠" },
-    { name: "Manage Users", path: "/ManageUsers", icon: "👥" },
-    { name: "Contracts", path: "/AdminContracts", icon: "📄" },
-    { name: "Transactions", path: "/transactions", icon: "💰" },
-    { name: "Disputes", path: "/disputes", icon: "⚠️" },
-    { name: "Content Review", path: "/ContentReview", icon: "📝" },
-    { name: "Commission Earnings", path: "/CommissionEarnings", icon: "💵" },
-    { name: "Reports", path: "/reports", icon: "📊" },
-    { name: "Settings", path: "/settings", icon: "⚙️" },
-  ];
+  const chartData = useMemo(() => [
+    { month: "Feb", volume: 4000,  commission: 400  },
+    { month: "Mar", volume: 16100, commission: 1788 },
+    { month: "Apr", volume: 18500, commission: 1870 },
+  ], []);
 
-  const transactions = [
-    { id: "TX1001", total: 5000, admin: 500, influencer: 4500, status: "Completed" },
-    { id: "TX1002", total: 3000, admin: 300, influencer: 2700, status: "Pending" },
-    { id: "TX1003", total: 4200, admin: 420, influencer: 3780, status: "Completed" },
-    { id: "TX1004", total: 2500, admin: 250, influencer: 2250, status: "Failed" },
-    { id: "TX1005", total: 6000, admin: 600, influencer: 5400, status: "Completed" },
-    { id: "TX1006", total: 3200, admin: 320, influencer: 2880, status: "Pending" },
-    { id: "TX1007", total: 2800, admin: 280, influencer: 2520, status: "Completed" },
-    { id: "TX1008", total: 1500, admin: 150, influencer: 1350, status: "Failed" },
-  ];
+  const months = useMemo(() => {
+  const unique = [...new Set(allTransactions.map((tx) => tx.month))];
+  return ["All", ...unique];
+}, [allTransactions]);
 
-  const filteredTransactions = transactions.filter((t) =>
-    t.id.toLowerCase().includes(search.toLowerCase())
-  );
+  const statuses = ["All", "Completed", "Pending", "Failed"];
 
-  const statusClass = (status) => {
-    switch (status) {
-      case "Completed":
-        return "status-completed";
-      case "Pending":
-        return "status-pending";
-      case "Failed":
-        return "status-deleted";
-      default:
-        return "";
-    }
+  const filtered = useMemo(() => {
+    return allTransactions.filter((tx) => {
+      const matchSearch =
+        tx.brand.toLowerCase().includes(search.toLowerCase())      ||
+        tx.influencer.toLowerCase().includes(search.toLowerCase()) ||
+        tx.campaign.toLowerCase().includes(search.toLowerCase())   ||
+        tx.id.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = statusFilter === "All" || tx.status === statusFilter;
+      const matchMonth  = monthFilter  === "All" || tx.month  === monthFilter;
+      return matchSearch && matchStatus && matchMonth;
+    });
+  }, [allTransactions, search, statusFilter, monthFilter]);
+
+  const totalVolume     = filtered.reduce((s, t) => s + t.amount, 0);
+  const totalCommission = filtered.reduce((s, t) => s + Math.round(t.amount * t.commission / 100), 0);
+  const completed       = filtered.filter((t) => t.status === "Completed").length;
+  const pending         = filtered.filter((t) => t.status === "Pending").length;
+
+  const tooltipStyle = {
+    background: "#1e1e2f",
+    border: "none",
+    borderRadius: 10,
+    color: "white",
   };
 
-  // Actions
-  const handleView = (t) => {
-    alert(`Viewing transaction ${t.id}`);
+  const statusClass = (s) => {
+    if (s === "Completed") return "status-resolved";
+    if (s === "Pending")   return "status-pending";
+    return "status-deleted";
   };
 
   return (
@@ -77,92 +89,148 @@ export default function Transactions() {
             <div className="dashboard-logo-icon">M</div>
             <span>MicroConnect</span>
           </div>
-
-          <button className="dashboard-logout" onClick={handleLogout}>
-            Log out
-          </button>
+          <button className="dashboard-logout" onClick={handleLogout}>Log out</button>
         </div>
 
+        {/* MAIN LAYOUT */}
         <div className="admin-layout">
+          <Sidebar onCollapse={setCollapsed} />
 
-          {/* SIDEBAR */}
-          <div className={`admin-sidebar ${collapsed ? "collapsed" : ""}`}>
-            <button
-              className="sidebar-toggle"
-              onClick={() => setCollapsed(!collapsed)}
-            >
-              {collapsed ? "➡️" : "⬅️"}
-            </button>
-
-            <ul>
-              {menu.map((item) => (
-                <li
-                  key={item.path}
-                  className={location.pathname === item.path ? "active" : ""}
-                  onClick={() => navigate(item.path)}
-                >
-                  <span className="icon">{item.icon}</span>
-                  {!collapsed && <span><strong>{item.name}</strong></span>}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* CONTENT */}
           <div className="admin-content">
 
-            {/* HEADER */}
+            {/* HERO */}
             <div className="dashboard-hero">
-              <h1>Transactions</h1><h2>(Payment Info.)</h2>
+              <h1>Transactions & Commission</h1>
+              <p>Full ledger of platform deals and MicroConnect earnings</p>
             </div>
 
-            {/* SEARCH */}
-            <div className="users-controls">
-              <input
-                type="text"
-                placeholder="Search by ID..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-
-            {/* TABLE */}
-            <div className="users-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>No.</th>
-                    <th>ID</th>
-                    <th>Total</th>
-                    <th>Admin (10%)</th>
-                    <th>Influencer</th>
-                    <th>Status</th>
-                    <th></th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredTransactions.map((t, index) => (
-                    <tr key={t.id}>
-                      <td>{index + 1}</td>
-                      <td>{t.id}</td>
-                      <td>SAR {t.total}</td>
-                      <td>SAR {t.admin}</td>
-                      <td>SAR {t.influencer}</td>
-                      <td className={statusClass(t.status)}>
-                        {t.status}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* PAGINATION */}
-              <div className="pagination">
-                <button>Previous</button>
-                <span>1</span>
-                <button>Next</button>
+            {/* STATS */}
+            <div className="dashboard-stats">
+              <div className="stat-card">
+                <div className="stat-number">SAR {totalVolume.toLocaleString()}</div>
+                <div className="stat-title">Total Volume</div>
+                <div className="stat-note">Filtered results</div>
               </div>
+              <div className="stat-card">
+                <div className="stat-number">SAR {totalCommission.toLocaleString()}</div>
+                <div className="stat-title">Commission Earned</div>
+                <div className="stat-note">MicroConnect's cut</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-number">{completed}</div>
+                <div className="stat-title">Completed</div>
+                <div className="stat-note">Filtered results</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-number">{pending}</div>
+                <div className="stat-title">Pending</div>
+                <div className="stat-note">Awaiting settlement</div>
+              </div>
+            </div>
+
+            {/* CHART */}
+            <div className="dashboard-section">
+              <div className="dashboard-section-header">
+                <div>
+                  <h2>Volume vs Commission</h2>
+                  <p>Monthly deal volume and MicroConnect earnings</p>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="month" stroke="#b8c2e4" />
+                  <YAxis stroke="#b8c2e4" />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend />
+                  <Bar dataKey="volume"     fill="#4aa8ff" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="commission" fill="#6d5dfc" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* FILTERS */}
+            <div className="dashboard-section">
+              <div className="users-controls">
+                <input
+                  className="txn-search"
+                  placeholder="Search by brand, influencer, campaign or ID..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <div className="tabs">
+                  {statuses.map((s) => (
+                    <button
+                      key={s}
+                      className={statusFilter === s ? "active" : ""}
+                      onClick={() => setStatus(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <select className="txn-select"
+                    value={monthFilter}
+                    onChange={(e) => setMonth(e.target.value)}>
+                    {months.map((m) => (
+                    <option key={m} value={m}>{m === "All" ? "All Months" : m}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* TABLE */}
+              <div className="users-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Brand</th>
+                      <th>Influencer</th>
+                      <th>Campaign</th>
+                      <th>Deal Amount</th>
+                      <th>Commission %</th>
+                      <th>Commission Earned</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign: "center", padding: "28px", color: "#b8c2e4" }}>
+                          No transactions match your filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      filtered.map((tx) => (
+                        <tr key={tx.id}>
+                          <td className="txn-id">{tx.id}</td>
+                          <td>{tx.brand}</td>
+                          <td>{tx.influencer}</td>
+                          <td>{tx.campaign}</td>
+                          <td className="txn-amount">SAR {tx.amount.toLocaleString()}</td>
+                          <td className="txn-date">{tx.commission}%</td>
+                          <td className="txn-amount">
+                            SAR {Math.round(tx.amount * tx.commission / 100).toLocaleString()}
+                          </td>
+                          <td className="txn-date">{tx.date}</td>
+                          <td className={statusClass(tx.status)}>{tx.status}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* SUMMARY FOOTER */}
+              <div className="txn-summary">
+                <span>{filtered.length} transactions</span>
+                <span>·</span>
+                <span>Volume: <strong>SAR {totalVolume.toLocaleString()}</strong></span>
+                <span>·</span>
+                <span>Commission: <strong>SAR {totalCommission.toLocaleString()}</strong></span>
+              </div>
+
             </div>
 
           </div>
