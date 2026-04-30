@@ -1,7 +1,7 @@
 import "./Login.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { users } from "../../data/mockUsers";
+import { loginUser } from "../../api/auth";
 import loginImage from "../../assets/images/login.png";
 
 export default function Login() {
@@ -9,33 +9,40 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    const user = users.find(
-      (u) => u.email === email && u.password === password
-    );
-
-    if (!user) {
-      alert("Invalid credentials");
+  const handleLogin = async () => {
+    if (!email || !password) {
+      alert("Please fill in all fields");
       return;
     }
 
-    localStorage.setItem("user", JSON.stringify(user));
+    try {
+      setLoading(true);
+      const data = await loginUser({ email, password });
 
-    if (user.role === "brand") navigate("/brand");
-    if (user.role === "influencer") navigate("/influencer");
-    if (user.role === "admin") navigate("/admin");
+      // Save token and user info
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Redirect based on role
+      if (data.user.role === "brand") navigate("/brand");
+      else if (data.user.role === "influencer") navigate("/influencer");
+      else if (data.user.role === "admin") navigate("/admin");
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="login-screen">
-      
-
       <div className="login-panel">
         <div className="login-left">
           <h1>Welcome Back !</h1>
-        <br></br>
-        <br></br>
+          <br />
+          <br />
           <input
             type="text"
             placeholder="Email / User Name"
@@ -50,17 +57,25 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button className="login-submit-btn" onClick={handleLogin}>
-            Log in
+          <button
+            className="login-submit-btn"
+            onClick={handleLogin}
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Log in"}
           </button>
-          <br></br>
+          <br />
 
-          <p className="login-link muted" onClick={() => navigate("/verification")}>
-        Forgot your password?
-            </p>
-            <br></br>
+          <p
+            className="login-link muted"
+            onClick={() => navigate("/verification")}
+          >
+            Forgot your password?
+          </p>
+          <br />
           <p className="login-link">
-            Don’t have an account? <span onClick={() => navigate("/create-account")}>Register</span>
+            Don't have an account?{" "}
+            <span onClick={() => navigate("/create-account")}>Register</span>
           </p>
         </div>
 

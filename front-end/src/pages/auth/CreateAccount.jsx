@@ -1,6 +1,7 @@
-import "../auth/Login.css"; 
+import "../auth/Login.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { registerUser } from "../../api/auth";
 import loginImage from "../../assets/images/login.png";
 
 export default function CreateAccount() {
@@ -10,19 +11,35 @@ export default function CreateAccount() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name || !email || !password || !role) {
       alert("Please fill all fields");
       return;
     }
 
-    const user = { name, email, password, role };
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters");
+      return;
+    }
 
-    localStorage.setItem("user", JSON.stringify(user));
+    try {
+      setLoading(true);
+      const data = await registerUser({ name, email, password, role });
 
-    if (role === "brand") navigate("/brand");
-    if (role === "influencer") navigate("/influencer");
+      // Save token and user info
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Redirect based on role
+      if (data.user.role === "brand") navigate("/brand");
+      else if (data.user.role === "influencer") navigate("/influencer");
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,7 +66,7 @@ export default function CreateAccount() {
 
           <input
             type="password"
-            placeholder="Password"
+            placeholder="Password (min 6 characters)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -84,8 +101,12 @@ export default function CreateAccount() {
             </button>
           </div>
 
-          <button className="login-submit-btn" onClick={handleRegister}>
-            Create Account
+          <button
+            className="login-submit-btn"
+            onClick={handleRegister}
+            disabled={loading}
+          >
+            {loading ? "Creating..." : "Create Account"}
           </button>
 
           <p className="login-link">
