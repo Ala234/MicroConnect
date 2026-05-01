@@ -20,6 +20,177 @@ const brandPopulate = {
   },
 };
 
+const textFilterFields = [
+  'name',
+  'title',
+  'description',
+  'objective',
+  'targetAudience',
+  'targetNiche',
+  'requirements',
+  'contentType',
+];
+
+const influencerCampaignFields = [
+  'name',
+  'objective',
+  'targetAudience',
+  'platforms',
+  'contentType',
+  'imageSrc',
+  'imageKey',
+  'startDate',
+  'endDate',
+  'influencersCount',
+  'reach',
+  'progress',
+];
+
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const makeRegex = (value) => new RegExp(escapeRegex(value), 'i');
+
+const splitQueryList = (value) => {
+  if (Array.isArray(value)) {
+    return value.flatMap(splitQueryList);
+  }
+
+  return String(value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const normalizePlatforms = (value) => splitQueryList(value);
+
+const buildTextFilter = (fields, value) => ({
+  $or: fields.map((field) => ({ [field]: makeRegex(value) })),
+});
+
+const formatCampaign = (campaign) => {
+  const campaignObject = campaign.toObject({ virtuals: true });
+
+  return {
+    ...campaignObject,
+    id: campaignObject._id.toString(),
+    name: campaignObject.name || campaignObject.title,
+    title: campaignObject.title || campaignObject.name,
+    objective: campaignObject.objective || campaignObject.targetNiche || '',
+    targetAudience:
+      campaignObject.targetAudience || campaignObject.targetNiche || campaignObject.requirements || '',
+    platforms: Array.isArray(campaignObject.platforms) ? campaignObject.platforms : [],
+    contentType: campaignObject.contentType || '',
+    imageSrc: campaignObject.imageSrc || '',
+    startDate: campaignObject.startDate || campaignObject.createdAt,
+    endDate: campaignObject.endDate || campaignObject.deadline,
+    influencersCount: campaignObject.influencersCount || '0',
+  };
+};
+
+const formatCampaigns = (campaigns) => campaigns.map(formatCampaign);
+
+const buildCampaignPayload = (body, brandId) => {
+  const payload = {
+    title: body.title || body.name,
+    description: body.description,
+    budget: body.budget,
+    requirements: body.requirements,
+    targetNiche: body.targetNiche,
+    deadline: body.deadline || body.endDate,
+    status: body.status,
+    brandId,
+  };
+
+  influencerCampaignFields.forEach((field) => {
+    if (body[field] !== undefined) {
+      payload[field] = field === 'platforms' ? normalizePlatforms(body[field]) : body[field];
+    }
+  });
+
+  if (!payload.name && payload.title) {
+    payload.name = payload.title;
+  }
+
+  return payload;
+};
+
+const applyCampaignFilters = (filters, query) => {
+  const andFilters = [];
+
+  if (query.search) {
+    andFilters.push(buildTextFilter(textFilterFields, query.search));
+  }
+
+  if (query.objective) {
+    filters.objective = makeRegex(query.objective);
+  }
+
+  if (query.contentType) {
+    filters.contentType = makeRegex(query.contentType);
+  }
+
+  if (query.platforms) {
+    filters.platforms = { $in: splitQueryList(query.platforms).map(makeRegex) };
+  }
+
+  if (query.budget) {
+    if (query.budget === 'low') {
+      filters.budget = { ...(filters.budget || {}), $lt: 1200 };
+    } else if (query.budget === 'medium') {
+      filters.budget = { ...(filters.budget || {}), $gte: 1200, $lt: 2000 };
+    } else if (query.budget === 'high') {
+      filters.budget = { ...(filters.budget || {}), $gte: 2000 };
+    }
+  }
+
+  if (query.age) {
+    const agePatterns = {
+      teens: ['13', '14', '15', '16', '17', '18-24', 'teens'],
+      'young-adults': ['20', '25', '20-29', '18-40', '18-34'],
+      adults: ['30', '35', '30+', '18-40', '18-34'],
+    };
+    const patterns = agePatterns[query.age] || [query.age];
+    andFilters.push({
+      $or: patterns.map((pattern) => ({ targetAudience: makeRegex(pattern) })),
+    });
+  }
+
+  if (query.gender) {
+    const genderFilters = splitQueryList(query.gender).map((gender) => {
+      if (gender === 'female') {
+        return buildTextFilter(['targetAudience'], 'women');
+      }
+
+      if (gender === 'male') {
+        return buildTextFilter(['targetAudience'], 'men');
+      }
+
+      return buildTextFilter(['targetAudience'], gender);
+    });
+
+    if (genderFilters.length) {
+      andFilters.push({ $or: genderFilters });
+    }
+  }
+
+  if (query.interests) {
+    const interestFilters = splitQueryList(query.interests).map((interest) =>
+      buildTextFilter(
+        ['objective', 'description', 'targetAudience', 'targetNiche', 'requirements', 'contentType'],
+        interest
+      )
+    );
+
+    if (interestFilters.length) {
+      andFilters.push({ $or: interestFilters });
+    }
+  }
+
+  if (andFilters.length) {
+    filters.$and = andFilters;
+  }
+};
+
 const getBrandProfileForUser = async (userId) => {
   return Brand.findOne({ userId });
 };
@@ -50,16 +221,7 @@ exports.createCampaign = async (req, res) => {
       return res.status(404).json({ message: 'Brand profile not found' });
     }
 
-    const campaign = await Campaign.create({
-      title: req.body.title,
-      description: req.body.description,
-      budget: req.body.budget,
-      requirements: req.body.requirements,
-      targetNiche: req.body.targetNiche,
-      deadline: req.body.deadline,
-      status: req.body.status,
-      brandId: brand._id,
-    });
+    const campaign = await Campaign.create(buildCampaignPayload(req.body, brand._id));
 
     const populatedCampaign = await Campaign.findById(campaign._id).populate(
       brandPopulate
@@ -67,7 +229,7 @@ exports.createCampaign = async (req, res) => {
 
     res.status(201).json({
       message: 'Campaign created successfully',
-      campaign: populatedCampaign,
+      campaign: formatCampaign(populatedCampaign),
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -107,11 +269,13 @@ exports.getCampaigns = async (req, res) => {
       }
     }
 
+    applyCampaignFilters(filters, req.query);
+
     const campaigns = await Campaign.find(filters)
       .populate(brandPopulate)
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ campaigns });
+    res.status(200).json({ campaigns: formatCampaigns(campaigns) });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -132,7 +296,7 @@ exports.getCampaignById = async (req, res) => {
       return res.status(404).json({ message: 'Campaign not found' });
     }
 
-    res.status(200).json({ campaign });
+    res.status(200).json({ campaign: formatCampaign(campaign) });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -160,18 +324,30 @@ exports.updateCampaign = async (req, res) => {
     const campaign = ownedCampaignResult.campaign;
 
     const fields = [
+      'name',
       'title',
+      'objective',
       'description',
       'budget',
       'requirements',
       'targetNiche',
+      'targetAudience',
+      'platforms',
+      'contentType',
+      'imageSrc',
+      'imageKey',
+      'startDate',
+      'endDate',
+      'influencersCount',
+      'reach',
+      'progress',
       'deadline',
       'status',
     ];
 
     fields.forEach((field) => {
       if (req.body[field] !== undefined) {
-        campaign[field] = req.body[field];
+        campaign[field] = field === 'platforms' ? normalizePlatforms(req.body[field]) : req.body[field];
       }
     });
 
@@ -183,7 +359,7 @@ exports.updateCampaign = async (req, res) => {
 
     res.status(200).json({
       message: 'Campaign updated successfully',
-      campaign: populatedCampaign,
+      campaign: formatCampaign(populatedCampaign),
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
