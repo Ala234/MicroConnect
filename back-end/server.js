@@ -19,11 +19,11 @@ app.use('/api/influencers', require('./routes/influencerRoutes'));
 
 const {
   campaignRouter,
-  applicationRouter,
 } = require('./routes/campaignRoutes');
+const applicationRoutes = require('./routes/applicationRoutes');
 
 app.use('/api/campaigns', campaignRouter);
-app.use('/api/applications', applicationRouter);
+app.use('/api/applications', applicationRoutes);
 
 const PORT = process.env.PORT || 5000;
 

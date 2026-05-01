@@ -54,7 +54,16 @@ Authorization: Bearer <brand-jwt>
 */
 
 const campaignBodyValidation = [
-  body('title').trim().notEmpty().withMessage('title is required'),
+  body().custom((_, { req }) => {
+    if (req.body.title || req.body.name) {
+      return true;
+    }
+
+    throw new Error('title or name is required');
+  }),
+  body('title').optional().trim().notEmpty().withMessage('title cannot be empty'),
+  body('name').optional().trim().notEmpty().withMessage('name cannot be empty'),
+  body('objective').optional().isString().withMessage('objective must be a string'),
   body('description')
     .trim()
     .notEmpty()
@@ -70,6 +79,40 @@ const campaignBodyValidation = [
     .optional()
     .isString()
     .withMessage('targetNiche must be a string'),
+  body('targetAudience')
+    .optional()
+    .isString()
+    .withMessage('targetAudience must be a string'),
+  body('platforms')
+    .optional()
+    .custom((value) => Array.isArray(value) || typeof value === 'string')
+    .withMessage('platforms must be an array or comma-separated string'),
+  body('contentType')
+    .optional()
+    .isString()
+    .withMessage('contentType must be a string'),
+  body('imageSrc').optional().isString().withMessage('imageSrc must be a string'),
+  body('imageKey').optional().isString().withMessage('imageKey must be a string'),
+  body('startDate')
+    .optional({ values: 'falsy' })
+    .isISO8601()
+    .withMessage('startDate must be a valid date'),
+  body('endDate')
+    .optional({ values: 'falsy' })
+    .isISO8601()
+    .withMessage('endDate must be a valid date'),
+  body('influencersCount')
+    .optional()
+    .custom((value) => typeof value === 'string' || typeof value === 'number')
+    .withMessage('influencersCount must be a string or number'),
+  body('reach')
+    .optional()
+    .custom((value) => typeof value === 'string' || typeof value === 'number')
+    .withMessage('reach must be a string or number'),
+  body('progress')
+    .optional()
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('progress must be between 0 and 100'),
   body('deadline')
     .optional({ values: 'falsy' })
     .isISO8601()
@@ -82,6 +125,8 @@ const campaignBodyValidation = [
 
 const campaignUpdateValidation = [
   body('title').optional().trim().notEmpty().withMessage('title cannot be empty'),
+  body('name').optional().trim().notEmpty().withMessage('name cannot be empty'),
+  body('objective').optional().isString().withMessage('objective must be a string'),
   body('description')
     .optional()
     .trim()
@@ -99,6 +144,40 @@ const campaignUpdateValidation = [
     .optional()
     .isString()
     .withMessage('targetNiche must be a string'),
+  body('targetAudience')
+    .optional()
+    .isString()
+    .withMessage('targetAudience must be a string'),
+  body('platforms')
+    .optional()
+    .custom((value) => Array.isArray(value) || typeof value === 'string')
+    .withMessage('platforms must be an array or comma-separated string'),
+  body('contentType')
+    .optional()
+    .isString()
+    .withMessage('contentType must be a string'),
+  body('imageSrc').optional().isString().withMessage('imageSrc must be a string'),
+  body('imageKey').optional().isString().withMessage('imageKey must be a string'),
+  body('startDate')
+    .optional({ values: 'falsy' })
+    .isISO8601()
+    .withMessage('startDate must be a valid date'),
+  body('endDate')
+    .optional({ values: 'falsy' })
+    .isISO8601()
+    .withMessage('endDate must be a valid date'),
+  body('influencersCount')
+    .optional()
+    .custom((value) => typeof value === 'string' || typeof value === 'number')
+    .withMessage('influencersCount must be a string or number'),
+  body('reach')
+    .optional()
+    .custom((value) => typeof value === 'string' || typeof value === 'number')
+    .withMessage('reach must be a string or number'),
+  body('progress')
+    .optional()
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('progress must be between 0 and 100'),
   body('deadline')
     .optional({ values: 'falsy' })
     .isISO8601()
@@ -128,6 +207,20 @@ campaignRouter.get(
       .optional()
       .isString()
       .withMessage('targetNiche must be a string'),
+    query('search').optional().isString().withMessage('search must be a string'),
+    query('budget')
+      .optional()
+      .isIn(['low', 'medium', 'high'])
+      .withMessage('budget must be one of: low, medium, high'),
+    query('age')
+      .optional()
+      .isIn(['teens', 'young-adults', 'adults'])
+      .withMessage('age must be one of: teens, young-adults, adults'),
+    query('gender').optional().isString().withMessage('gender must be a string'),
+    query('interests').optional().isString().withMessage('interests must be a string'),
+    query('objective').optional().isString().withMessage('objective must be a string'),
+    query('contentType').optional().isString().withMessage('contentType must be a string'),
+    query('platforms').optional().isString().withMessage('platforms must be a string'),
     query('minBudget')
       .optional()
       .isFloat({ min: 0 })
