@@ -19,6 +19,7 @@ export default function MessagingPage() {
   const [messageText, setMessageText] = useState('');
 
   const campaign = getCampaignById(id);
+  const campaignBrandName = campaign?.brandName || campaign?.brand || 'Brand';
   const returnTo = location.state?.returnTo || `/influencer/campaign/${id}`;
   const profileComplete = isInfluencerProfileComplete(getProfileForUser());
 
@@ -122,7 +123,7 @@ export default function MessagingPage() {
                 </div>
                 <div className="chat-header-info">
                   <h4 className="chat-header-name">{campaign.name}</h4>
-                  <p className="chat-header-status">Active | Online</p>
+                  <p className="chat-header-status">{campaignBrandName} | Active</p>
                 </div>
               </div>
 

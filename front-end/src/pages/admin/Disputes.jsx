@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import { MoreVertical } from "lucide-react";
+import {
+  formatDisputeDate,
+  getAllDisputes,
+  updateDispute,
+} from "../../data/disputes";
 
 const DISPUTES_PER_PAGE = 5;
 
@@ -18,22 +23,14 @@ export default function Disputes() {
   };
 
   // ── State ──────────────────────────────────────────────
-  const [disputes, setDisputes] = useState([
-    { id: "D1001", filedBy: "SaraBlogs",  against: "NikeArabia", campaign: "Ramadan Collection", reason: "Payment not received after content delivery",      date: "Apr 28", priority: "High",   status: "Pending"  },
-    { id: "D1002", filedBy: "GlowCo",     against: "AhmedFit",   campaign: "Summer Glow",        reason: "Content did not meet agreed specifications",        date: "Apr 25", priority: "Medium", status: "Resolved" },
-    { id: "D1003", filedBy: "LisaStyle",  against: "LuxBrand",   campaign: "Eid Special Drop",   reason: "Brand changed requirements after contract signing",  date: "Apr 22", priority: "High",   status: "Pending"  },
-    { id: "D1004", filedBy: "TechStore",  against: "SaraBlogs",  campaign: "Tech Review 2026",   reason: "Influencer missed agreed posting deadline",          date: "Apr 18", priority: "Low",    status: "Resolved" },
-    { id: "D1005", filedBy: "AhmedFit",   against: "FoodHub",    campaign: "Food Week",          reason: "Partial payment dispute — amount mismatch",         date: "Apr 15", priority: "Medium", status: "Pending"  },
-    { id: "D1006", filedBy: "NikeArabia", against: "LisaStyle",  campaign: "Spring Drop",        reason: "Content removed before agreed campaign end date",    date: "Apr 10", priority: "High",   status: "Pending"  },
-    { id: "D1007", filedBy: "SaraBlogs",  against: "GlowCo",     campaign: "Glow Up Campaign",   reason: "Contract terms were modified without consent",       date: "Apr 05", priority: "Low",    status: "Resolved" },
-    { id: "D1008", filedBy: "LuxBrand",   against: "AhmedFit",   campaign: "Luxury Fitness",     reason: "Influencer promoted competitor during campaign",     date: "Mar 30", priority: "High",   status: "Resolved" },
-  ]);
+  const [disputes, setDisputes] = useState(() => getAllDisputes());
 
   const [search,         setSearch]        = useState("");
   const [statusFilter,   setStatusFilter]  = useState("All");
   const [priorityFilter, setPriorityFilter]= useState("All");
   const [openMenu,       setOpenMenu]      = useState(null);
   const [confirmResolve, setConfirmResolve]= useState(null);
+  const [viewDispute,    setViewDispute]   = useState(null);
   const [page,           setPage]          = useState(1);
 
   const menuRef = useRef(null);
@@ -54,27 +51,28 @@ export default function Disputes() {
 
   // ── Actions ────────────────────────────────────────────
   const handleResolve = (id) => {
-    setDisputes((prev) =>
-      prev.map((d) => d.id === id ? { ...d, status: "Resolved" } : d)
-    );
+    const nextDisputes = updateDispute(id, { status: "Resolved" });
+    setDisputes(nextDisputes);
     setConfirmResolve(null);
     setOpenMenu(null);
-    // TODO: await api.patch(`/disputes/${id}/resolve`)
   };
 
   const handleView = (dispute) => {
-    navigate(`/admin/disputes/${dispute.id}`);
-    // TODO: navigate to real dispute detail page
+    setViewDispute(viewDispute === dispute.disputeId ? null : dispute.disputeId);
+    setOpenMenu(null);
   };
 
   // ── Filtering ──────────────────────────────────────────
   const filtered = useMemo(() => {
     return disputes.filter((d) => {
       const matchSearch =
-        d.id.toLowerCase().includes(search.toLowerCase())        ||
-        d.filedBy.toLowerCase().includes(search.toLowerCase())   ||
-        d.against.toLowerCase().includes(search.toLowerCase())   ||
-        d.campaign.toLowerCase().includes(search.toLowerCase());
+        d.disputeId.toLowerCase().includes(search.toLowerCase())        ||
+        d.submittedByName.toLowerCase().includes(search.toLowerCase())  ||
+        d.submittedByRole.toLowerCase().includes(search.toLowerCase())  ||
+        d.brandName.toLowerCase().includes(search.toLowerCase())        ||
+        d.campaignName.toLowerCase().includes(search.toLowerCase())     ||
+        d.reason.toLowerCase().includes(search.toLowerCase())           ||
+        d.subject.toLowerCase().includes(search.toLowerCase());
       const matchStatus   = statusFilter   === "All" || d.status   === statusFilter;
       const matchPriority = priorityFilter === "All" || d.priority === priorityFilter;
       return matchSearch && matchStatus && matchPriority;
@@ -200,11 +198,13 @@ export default function Disputes() {
                 <thead>
                   <tr>
                     <th>No.</th>
-                    <th>ID</th>
-                    <th>Filed By</th>
-                    <th>Against</th>
+                    <th>Dispute ID</th>
+                    <th>Submitted By</th>
+                    <th>Role</th>
                     <th>Campaign</th>
+                    <th>Brand</th>
                     <th>Reason</th>
+                    <th>Subject</th>
                     <th>Date</th>
                     <th>Priority</th>
                     <th>Status</th>
@@ -214,39 +214,41 @@ export default function Disputes() {
                 <tbody>
                   {paginated.length === 0 ? (
                     <tr>
-                      <td colSpan={10} style={{ textAlign: "center", padding: "28px", color: "#b8c2e4" }}>
+                      <td colSpan={12} style={{ textAlign: "center", padding: "28px", color: "#b8c2e4" }}>
                         No disputes match your filters.
                       </td>
                     </tr>
                   ) : (
                     paginated.map((d, index) => (
                       <>
-                        <tr key={d.id}>
+                        <tr key={d.disputeId}>
                           <td>{(page - 1) * DISPUTES_PER_PAGE + index + 1}</td>
-                          <td className="txn-id">{d.id}</td>
-                          <td>{d.filedBy}</td>
-                          <td>{d.against}</td>
-                          <td>{d.campaign}</td>
+                          <td className="txn-id">{d.disputeId}</td>
+                          <td>{d.submittedByName}</td>
+                          <td>{d.submittedByRole}</td>
+                          <td>{d.campaignName}</td>
+                          <td>{d.brandName}</td>
                           <td className="dispute-reason" title={d.reason}>{d.reason}</td>
-                          <td className="txn-date">{d.date}</td>
+                          <td className="dispute-reason" title={d.subject}>{d.subject}</td>
+                          <td className="txn-date">{formatDisputeDate(d.dateSubmitted)}</td>
                           <td className={priorityClass(d.priority)}>{d.priority}</td>
                           <td className={statusClass(d.status)}>{d.status}</td>
-                          <td className="action-cell" ref={openMenu === d.id ? menuRef : null}>
+                          <td className="action-cell" ref={openMenu === d.disputeId ? menuRef : null}>
                             <button
                               className="action-btn"
-                              onClick={() => setOpenMenu(openMenu === d.id ? null : d.id)}
+                              onClick={() => setOpenMenu(openMenu === d.disputeId ? null : d.disputeId)}
                             >
                               <MoreVertical size={18} />
                             </button>
 
-                            {openMenu === d.id && (
+                            {openMenu === d.disputeId && (
                               <div className="action-menu">
                                 <div onClick={() => handleView(d)}>
                                   View Details
                                 </div>
                                 {d.status === "Pending" && (
                                   <div onClick={() => {
-                                    setConfirmResolve(d.id);
+                                    setConfirmResolve(d.disputeId);
                                     setOpenMenu(null);
                                   }}>
                                     Mark as Resolved
@@ -258,14 +260,14 @@ export default function Disputes() {
                         </tr>
 
                         {/* INLINE RESOLVE CONFIRM */}
-                        {confirmResolve === d.id && (
-                          <tr key={`confirm-${d.id}`}>
-                            <td colSpan={10}>
+                        {confirmResolve === d.disputeId && (
+                          <tr key={`confirm-${d.disputeId}`}>
+                            <td colSpan={12}>
                               <div className="confirm-row">
-                                <span>Mark <strong>{d.id}</strong> as resolved?</span>
+                                <span>Mark <strong>{d.disputeId}</strong> as resolved?</span>
                                 <button
                                   className="confirm-yes"
-                                  onClick={() => handleResolve(d.id)}
+                                  onClick={() => handleResolve(d.disputeId)}
                                 >
                                   Yes, Resolve
                                 </button>
@@ -275,6 +277,19 @@ export default function Disputes() {
                                 >
                                   Cancel
                                 </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+
+                        {viewDispute === d.disputeId && (
+                          <tr key={`details-${d.disputeId}`}>
+                            <td colSpan={12}>
+                              <div className="confirm-row">
+                                <span><strong>Description:</strong> {d.description}</span>
+                                <span><strong>Contract:</strong> {d.contractId}</span>
+                                <span><strong>Submitted By Email:</strong> {d.submittedByEmail || 'Not provided'}</span>
+                                <span><strong>Admin Response:</strong> {d.adminResponse || 'No admin response yet.'}</span>
                               </div>
                             </td>
                           </tr>

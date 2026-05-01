@@ -78,6 +78,11 @@ export default function MyApplications() {
 
         <div className="applications-list">
           {applications.length > 0 ? applications.map((application) => {
+            const applicationBrandName =
+              application.campaign.brandName ||
+              application.campaign.brand ||
+              application.brandName ||
+              'Brand';
             const durationDays = Math.max(
               1,
               Math.ceil(
@@ -100,7 +105,7 @@ export default function MyApplications() {
                 <div className="application-header">
                   <div className="application-heading">
                     <h3>{application.campaign.name}</h3>
-                    <p className="application-subtitle">{application.campaign.objective}</p>
+                    <p className="application-subtitle">{applicationBrandName} | {application.campaign.objective}</p>
                   </div>
                   <div className="application-status">
                     <span className={`status-badge status-${application.statusTone}`}>
@@ -130,6 +135,9 @@ export default function MyApplications() {
                   </div>
 
                   <div className="application-meta">
+                    <span>
+                      Brand: {applicationBrandName}
+                    </span>
                     <span>
                       Applied:{' '}
                       {new Date(application.appliedDate).toLocaleDateString('en-US', {

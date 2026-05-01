@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { saveCurrentInfluencerProfile } from '../../api/auth';
 import SocialPlatformIcon from '../../components/influencer/SocialPlatformIcon';
 import {
   getCurrentUser,
@@ -66,6 +67,8 @@ export default function InfluencerSetup() {
   );
   const [profile, setProfile] = useState(initialProfile);
   const [errors, setErrors] = useState({});
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'influencer') {
@@ -79,6 +82,7 @@ export default function InfluencerSetup() {
   }, [currentUser, initialProfile, navigate]);
 
   const handleInputChange = (field, value) => {
+    setSaveError('');
     setProfile((current) => ({
       ...current,
       [field]: value,
@@ -86,6 +90,7 @@ export default function InfluencerSetup() {
   };
 
   const handleNestedInputChange = (section, field, value) => {
+    setSaveError('');
     setProfile((current) => ({
       ...current,
       [section]: {
@@ -96,6 +101,7 @@ export default function InfluencerSetup() {
   };
 
   const handleCategoriesChange = (value) => {
+    setSaveError('');
     setProfile((current) => ({
       ...current,
       categories: value
@@ -118,10 +124,11 @@ export default function InfluencerSetup() {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const validation = validateInfluencerProfile(profile);
 
     if (!validation.isValid) {
+      setSaveError('');
       setErrors(validation.errors);
       const firstField = Object.keys(validation.errors)[0];
       const targetField = focusFieldMap[firstField] || firstField;
@@ -135,8 +142,23 @@ export default function InfluencerSetup() {
     }
 
     setErrors({});
-    saveInfluencerProfile(profile);
-    navigate('/influencer');
+    setSaveError('');
+    setIsSaving(true);
+
+    try {
+      const completedProfile = {
+        ...profile,
+        status: profile.status || 'active',
+        isProfileComplete: true,
+      };
+      const backendProfile = await saveCurrentInfluencerProfile(completedProfile);
+      saveInfluencerProfile(backendProfile || completedProfile);
+      navigate('/influencer');
+    } catch (error) {
+      setSaveError(error.message || 'Profile could not be saved.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const fieldError = (field) =>
@@ -145,6 +167,7 @@ export default function InfluencerSetup() {
   const inputClass = (field) => (errors[field] ? 'input-error' : undefined);
 
   const errorFields = Object.keys(errors);
+  const welcomeName = (currentUser?.name || profile.name || '').trim();
 
   return (
     <main className="influencer-page dashboard-page">
@@ -165,7 +188,7 @@ export default function InfluencerSetup() {
 
         <section className="campaigns-dashboard-banner">
           <div className="campaigns-dashboard-copy">
-            <h1>Welcome, new influencer</h1>
+            <h1>{welcomeName ? `Welcome, ${welcomeName}` : 'Welcome, influencer'}</h1>
             <p className="campaigns-dashboard-subtitle">
               Complete your profile to start applying for campaigns. Brands use this information to understand your audience, platforms, and collaboration rates.
             </p>
@@ -178,8 +201,8 @@ export default function InfluencerSetup() {
               <p className="section-label">Profile Setup</p>
               <h2>Build your influencer profile</h2>
             </div>
-            <button className="btn btn-primary" onClick={handleSave}>
-              Save and Continue
+            <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save and Continue'}
             </button>
           </div>
 
@@ -187,6 +210,13 @@ export default function InfluencerSetup() {
             <div className="form-error-summary" role="alert">
               <h3>Please fix the highlighted fields before continuing.</h3>
               <p>Invalid fields: {errorFields.map((field) => fieldLabels[field] || field).join(', ')}</p>
+            </div>
+          )}
+
+          {saveError && (
+            <div className="form-error-summary" role="alert">
+              <h3>Profile could not be saved.</h3>
+              <p>{saveError}</p>
             </div>
           )}
 
@@ -376,8 +406,8 @@ export default function InfluencerSetup() {
           </div>
 
           <div className="campaign-action-buttons">
-            <button className="btn btn-primary" onClick={handleSave}>
-              Save and Continue
+            <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save and Continue'}
             </button>
           </div>
         </section>

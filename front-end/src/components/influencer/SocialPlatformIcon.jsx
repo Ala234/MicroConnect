@@ -17,6 +17,7 @@ export default function SocialPlatformIcon({ platform }) {
         </svg>
       );
     
+    
     case 'youtube':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">

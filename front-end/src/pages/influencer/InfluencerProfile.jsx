@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { saveCurrentInfluencerProfile } from '../../api/auth';
 import SocialPlatformIcon from '../../components/influencer/SocialPlatformIcon';
 import {
   getCurrentUser,
@@ -73,6 +74,8 @@ export default function InfluencerProfile() {
   const [profile, setProfile] = useState(initialProfile);
   const [isEditing, setIsEditing] = useState(!initialProfileComplete);
   const [errors, setErrors] = useState({});
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'influencer') {
@@ -89,9 +92,10 @@ export default function InfluencerProfile() {
   const displayLocation = profile.location || emptyText;
   const displayBio = profile.bio || emptyText;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const validation = validateInfluencerProfile(profile);
     if (!validation.isValid) {
+      setSaveError('');
       setErrors(validation.errors);
       const firstField = Object.keys(validation.errors)[0];
       const targetField = focusFieldMap[firstField] || firstField;
@@ -104,13 +108,29 @@ export default function InfluencerProfile() {
       return;
     }
 
-    const savedProfile = saveInfluencerProfile(profile);
-    setProfile(savedProfile);
     setErrors({});
-    setIsEditing(false);
+    setSaveError('');
+    setIsSaving(true);
+
+    try {
+      const completedProfile = {
+        ...profile,
+        status: profile.status || 'active',
+        isProfileComplete: true,
+      };
+      const backendProfile = await saveCurrentInfluencerProfile(completedProfile);
+      const savedProfile = saveInfluencerProfile(backendProfile || completedProfile);
+      setProfile(savedProfile);
+      setIsEditing(false);
+    } catch (error) {
+      setSaveError(error.message || 'Profile could not be saved.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleInputChange = (field, value) => {
+    setSaveError('');
     setProfile((prev) => ({
       ...prev,
       [field]: value
@@ -118,6 +138,7 @@ export default function InfluencerProfile() {
   };
 
   const handleNestedInputChange = (section, field, value) => {
+    setSaveError('');
     setProfile((prev) => ({
       ...prev,
       [section]: {
@@ -128,6 +149,7 @@ export default function InfluencerProfile() {
   };
 
   const handleCategoriesChange = (value) => {
+    setSaveError('');
     setProfile((prev) => ({
       ...prev,
       categories: value
@@ -241,8 +263,8 @@ export default function InfluencerProfile() {
                 <button className="btn btn-outline" onClick={() => navigate('/influencer/history')}>
                   Brand Feedback
                 </button>
-                <button className="btn btn-outline" onClick={() => navigate('/influencer/complaints')}>
-                  Complaints
+                <button className="btn btn-outline" onClick={() => navigate('/influencer/disputes')}>
+                  Disputes
                 </button>
               </div>
             </div>
@@ -257,8 +279,9 @@ export default function InfluencerProfile() {
           <button
             className="btn btn-primary"
             onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
+            disabled={isSaving}
           >
-            {isEditing ? 'Save Changes' : 'Edit Profile'}
+            {isSaving ? 'Saving...' : isEditing ? 'Save Changes' : 'Edit Profile'}
           </button>
         </div>
 
@@ -266,6 +289,13 @@ export default function InfluencerProfile() {
           <div className="form-error-summary" role="alert">
             <h3>Please fix the highlighted fields before continuing.</h3>
             <p>Invalid fields: {errorFields.map((field) => fieldLabels[field] || field).join(', ')}</p>
+          </div>
+        )}
+
+        {saveError && (
+          <div className="form-error-summary" role="alert">
+            <h3>Profile could not be saved.</h3>
+            <p>{saveError}</p>
           </div>
         )}
 
