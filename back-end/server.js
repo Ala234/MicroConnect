@@ -15,16 +15,20 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/brands', require('./routes/brandRoutes'));
+<<<<<<< HEAD
 app.use('/api/admin',  require('./routes/adminRoutes'));
 console.log('✅ Admin routes loaded');
+=======
+app.use('/api/influencers', require('./routes/influencerRoutes'));
+>>>>>>> d131bd1169f6768836327d957f1e8570808eaf1f
 
 const {
   campaignRouter,
-  applicationRouter,
 } = require('./routes/campaignRoutes');
+const applicationRoutes = require('./routes/applicationRoutes');
 
 app.use('/api/campaigns', campaignRouter);
-app.use('/api/applications', applicationRouter);
+app.use('/api/applications', applicationRoutes);
 
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 app.use(notFound);
