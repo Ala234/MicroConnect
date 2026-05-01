@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCampaigns } from '../../data/mockCampaigns';
+import { getProfileForUser, isInfluencerProfileComplete } from '../../data/influencerAccounts';
 import '../../styles/influencer.css';
 
 export default function AvailableCampaigns() {
   const navigate = useNavigate();
   const campaigns = getCampaigns().filter((campaign) => campaign.id !== 'summer-collection');
+  const profileComplete = isInfluencerProfileComplete(getProfileForUser());
 
   const [searchTerm, setSearchTerm] = useState('');
   const [budgetFilter, setBudgetFilter] = useState('');
@@ -16,6 +18,12 @@ export default function AvailableCampaigns() {
   });
   const [showAudienceDropdown, setShowAudienceDropdown] = useState(false);
   const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!profileComplete) {
+      navigate('/influencer/setup');
+    }
+  }, [profileComplete, navigate]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -80,6 +88,10 @@ export default function AvailableCampaigns() {
       return matchesSearch && matchesBudget && matchesAge && matchesAudience;
     });
   }, [searchTerm, budgetFilter, ageFilter, audienceFilter, campaigns]);
+
+  if (!profileComplete) {
+    return null;
+  }
 
   return (
     <main className="influencer-page dashboard-page">

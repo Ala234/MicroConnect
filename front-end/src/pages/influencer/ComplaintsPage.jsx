@@ -1,35 +1,43 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  getInfluencerStorageKey,
+  getProfileForUser,
+  isInfluencerProfileComplete,
+} from '../../data/influencerAccounts';
 import '../../styles/influencer.css';
 
 const STORAGE_KEY = 'influencerComplaints';
+const SARAH_STORAGE_KEY = 'sarah.johnson@email.com';
 
-const complaintSeed = [
-  {
-    complaintId: 'CMP-1001',
-    campaignName: 'Spring Collection',
-    brandName: 'Fashion Forward',
-    contractId: 'CTR-2041',
-    subject: 'Delayed payment release',
-    reason: 'Payment issue',
-    description: 'The campaign was completed and approved, but the agreed payment has not been released on time.',
-    dateSubmitted: '2026-03-22',
-    status: 'In Review',
-    adminResponse: 'Finance verification is in progress. We will update you within 3 business days.'
-  },
-  {
-    complaintId: 'CMP-1002',
-    campaignName: 'Winter Collection',
-    brandName: 'North Thread',
-    contractId: 'CTR-1985',
-    subject: 'Deliverables changed after approval',
-    reason: 'Contract issue',
-    description: 'Additional deliverables were requested after the contract terms were already approved.',
-    dateSubmitted: '2026-02-10',
-    status: 'Resolved',
-    adminResponse: 'The signed contract terms were confirmed and the brand was instructed to follow the original scope.'
-  }
-];
+const complaintsByInfluencer = {
+  [SARAH_STORAGE_KEY]: [
+    {
+      complaintId: 'CMP-1001',
+      campaignName: 'Spring Collection',
+      brandName: 'Fashion Forward',
+      contractId: 'CTR-2041',
+      subject: 'Delayed payment release',
+      reason: 'Payment issue',
+      description: 'The campaign was completed and approved, but the agreed payment has not been released on time.',
+      dateSubmitted: '2026-03-22',
+      status: 'In Review',
+      adminResponse: 'Finance verification is in progress. We will update you within 3 business days.'
+    },
+    {
+      complaintId: 'CMP-1002',
+      campaignName: 'Winter Collection',
+      brandName: 'North Thread',
+      contractId: 'CTR-1985',
+      subject: 'Deliverables changed after approval',
+      reason: 'Contract issue',
+      description: 'Additional deliverables were requested after the contract terms were already approved.',
+      dateSubmitted: '2026-02-10',
+      status: 'Resolved',
+      adminResponse: 'The signed contract terms were confirmed and the brand was instructed to follow the original scope.'
+    }
+  ]
+};
 
 const removedComplaintIds = new Set(['CMP-1003']);
 
@@ -53,51 +61,61 @@ const formatDate = (date) =>
   });
 
 const generateComplaintId = (complaints) => {
-  const nextNumber = complaints.reduce((max, complaint) => {
+  let nextNumber = complaints.reduce((max, complaint) => {
     const numericId = Number(complaint.complaintId.replace(/\D/g, ''));
     return Number.isNaN(numericId) ? max : Math.max(max, numericId);
   }, 1000) + 1;
 
+  while (removedComplaintIds.has(`CMP-${nextNumber}`)) {
+    nextNumber += 1;
+  }
+
   return `CMP-${nextNumber}`;
 };
 
-const readStoredComplaints = () => {
+const sanitizeComplaints = (complaints) =>
+  complaints.filter((complaint) => !removedComplaintIds.has(complaint.complaintId));
+
+const getScopedStorageKey = (influencerKey) => `${STORAGE_KEY}:${influencerKey}`;
+
+const readJsonArray = (storageKey) => {
   if (typeof window === 'undefined') {
-    return complaintSeed;
+    return null;
   }
 
-  const rawComplaints = localStorage.getItem(STORAGE_KEY);
-
+  const rawComplaints = localStorage.getItem(storageKey);
   if (!rawComplaints) {
-    return complaintSeed;
+    return null;
   }
 
   try {
     const parsedComplaints = JSON.parse(rawComplaints);
-    if (!Array.isArray(parsedComplaints)) {
-      return complaintSeed;
-    }
-
-    const sanitizedComplaints = parsedComplaints.filter(
-      (complaint) => !removedComplaintIds.has(complaint.complaintId)
-    );
-
-    if (sanitizedComplaints.length !== parsedComplaints.length) {
-      writeStoredComplaints(sanitizedComplaints);
-    }
-
-    return sanitizedComplaints;
+    return Array.isArray(parsedComplaints) ? parsedComplaints : null;
   } catch {
-    return complaintSeed;
+    return null;
   }
 };
 
-const writeStoredComplaints = (complaints) => {
+const readStoredComplaints = (influencerKey) => {
+  const scopedComplaints = readJsonArray(getScopedStorageKey(influencerKey));
+  if (scopedComplaints) {
+    return sanitizeComplaints(scopedComplaints);
+  }
+
+  if (influencerKey === SARAH_STORAGE_KEY) {
+    const legacyComplaints = readJsonArray(STORAGE_KEY);
+    return sanitizeComplaints(legacyComplaints || complaintsByInfluencer[SARAH_STORAGE_KEY]);
+  }
+
+  return [];
+};
+
+const writeStoredComplaints = (influencerKey, complaints) => {
   if (typeof window === 'undefined') {
     return;
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(complaints));
+  localStorage.setItem(getScopedStorageKey(influencerKey), JSON.stringify(complaints));
 };
 
 const statusToneMap = {
@@ -109,13 +127,24 @@ const statusToneMap = {
 
 export default function ComplaintsPage() {
   const navigate = useNavigate();
-  const initialComplaints = useMemo(() => readStoredComplaints(), []);
+  const influencerKey = getInfluencerStorageKey();
+  const profileComplete = isInfluencerProfileComplete(getProfileForUser());
+  const initialComplaints = useMemo(() => readStoredComplaints(influencerKey), [influencerKey]);
   const [complaints, setComplaints] = useState(initialComplaints);
   const [formData, setFormData] = useState(() => ({
     ...emptyComplaint(),
-    complaintId: generateComplaintId(initialComplaints),
     dateSubmitted: new Date().toISOString().slice(0, 10)
   }));
+
+  useEffect(() => {
+    if (!profileComplete) {
+      navigate('/influencer/setup');
+    }
+  }, [profileComplete, navigate]);
+
+  if (!profileComplete) {
+    return null;
+  }
 
   const handleInputChange = (field, value) => {
     setFormData((current) => ({
@@ -127,7 +156,6 @@ export default function ComplaintsPage() {
   const resetForm = (nextComplaints) => {
     setFormData({
       ...emptyComplaint(),
-      complaintId: generateComplaintId(nextComplaints),
       dateSubmitted: new Date().toISOString().slice(0, 10)
     });
   };
@@ -138,6 +166,7 @@ export default function ComplaintsPage() {
     const nextComplaints = [
       {
         ...formData,
+        complaintId: generateComplaintId(complaints),
         contractId: formData.contractId.trim() || 'Not provided',
         adminResponse: ''
       },
@@ -145,7 +174,7 @@ export default function ComplaintsPage() {
     ];
 
     setComplaints(nextComplaints);
-    writeStoredComplaints(nextComplaints);
+    writeStoredComplaints(influencerKey, nextComplaints);
     resetForm(nextComplaints);
   };
 
@@ -194,7 +223,7 @@ export default function ComplaintsPage() {
                 <div className="complaints-form-grid">
                   <div className="form-group">
                     <label htmlFor="complaintId">Complaint ID</label>
-                    <input id="complaintId" type="text" value={formData.complaintId} readOnly />
+                    <input id="complaintId" type="text" value={formData.complaintId} placeholder="Assigned after submission" readOnly />
                   </div>
 
                   <div className="form-group">
@@ -297,7 +326,7 @@ export default function ComplaintsPage() {
               </div>
 
               <div className="complaints-history-list">
-                {complaints.map((complaint) => (
+                {complaints.length > 0 ? complaints.map((complaint) => (
                   <article className="complaint-history-item" key={complaint.complaintId}>
                     <div className="complaint-history-header">
                       <div>
@@ -339,7 +368,14 @@ export default function ComplaintsPage() {
                       </div>
                     </div>
                   </article>
-                ))}
+                )) : (
+                  <div className="no-results">
+                    <h3>No complaints submitted yet</h3>
+                    <p>
+                      If you ever face a payment, contract, deliverable, or communication issue, you can submit a complaint here and track the admin response.
+                    </p>
+                  </div>
+                )}
               </div>
             </section>
           </div>
