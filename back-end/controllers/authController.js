@@ -1,10 +1,41 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Influencer = require('../models/Influencer');
 
 // Helper: Generate JWT token
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
+  });
+};
+
+const createInitialInfluencerProfile = async (user) => {
+  return Influencer.create({
+    userId: user._id,
+    name: user.name,
+    email: user.email,
+    bio: '',
+    location: '',
+    website: '',
+    instagram: '',
+    tiktok: '',
+    youtube: '',
+    followers: '',
+    engagement: '',
+    categories: [],
+    rates: {
+      post: '',
+      story: '',
+      video: '',
+    },
+    audience: {
+      age: '',
+      gender: '',
+      location: '',
+    },
+    profileImage: '',
+    status: 'active',
+    isProfileComplete: false,
   });
 };
 
@@ -45,6 +76,12 @@ exports.register = async (req, res) => {
     });
     console.log(' User created:', user._id);
 
+    let influencerProfile = null;
+    if (role === 'influencer') {
+      influencerProfile = await createInitialInfluencerProfile(user);
+      console.log('Influencer profile created:', influencerProfile._id);
+    }
+
     // Generate token
     const token = generateToken(user._id);
     console.log('Token generated');
@@ -58,6 +95,7 @@ exports.register = async (req, res) => {
         email: user.email,
         role: user.role,
       },
+      influencerProfile,
     });
   } catch (error) {
     console.log(' ERROR:', error);

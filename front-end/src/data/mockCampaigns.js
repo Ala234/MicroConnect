@@ -38,6 +38,7 @@ const defaultCampaigns = [
   {
     id: "spring-collection",
     name: "Spring Collection",
+    brandName: "Fashion Forward",
     objective: "Brand Awareness",
     description:
       "Launch our new spring collection through micro-influencer content with fresh styling inspiration and product discovery.",
@@ -55,6 +56,7 @@ const defaultCampaigns = [
   {
     id: "winter-collection",
     name: "Winter Collection",
+    brandName: "North Thread",
     objective: "Conversions",
     description:
       "Drive seasonal sales with creators showing outfit combinations, product details, and limited-time offers.",
@@ -72,6 +74,7 @@ const defaultCampaigns = [
   {
     id: "skin-care-collection",
     name: "Skin Care Collection",
+    brandName: "Pure Beauty",
     objective: "Product Launch",
     description:
       "Introduce a new skin-care line with educational creator content focused on routines, ingredients, and before/after storytelling.",
@@ -89,11 +92,17 @@ const defaultCampaigns = [
 
 ];
 
+const defaultBrandById = defaultCampaigns.reduce((brands, campaign) => {
+  brands[campaign.id] = campaign.brandName;
+  return brands;
+}, {});
+
 const withImage = (campaign) => {
   const legacyImageSrc = typeof campaign.imageSrc === 'string' ? resolveLegacyImage(campaign.imageSrc) : null;
 
   return {
     ...campaign,
+    brandName: campaign.brandName || campaign.brand || defaultBrandById[campaign.id] || "Brand",
     imageSrc:
       legacyImageSrc ||
       campaign.imageSrc ||
@@ -133,6 +142,7 @@ const writeStoredCampaigns = (campaigns) => {
 const normalizeCampaign = (campaign) => ({
   id: campaign.id || `campaign-${Date.now()}`,
   name: campaign.name || "",
+  brandName: campaign.brandName || campaign.brand || defaultBrandById[campaign.id] || "Brand",
   objective: campaign.objective || "",
   description: campaign.description || "",
   startDate: campaign.startDate || "",

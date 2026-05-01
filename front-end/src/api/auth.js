@@ -1,28 +1,77 @@
 import {
+  createEmptyInfluencerProfile,
   getMockInfluencerAccountByCredentials,
-  registerInfluencerAccount,
+  saveInfluencerProfile,
   toAuthResponse,
 } from "../data/influencerAccounts";
 
 // Base URL of the backend
 const API_URL = "http://localhost:5000/api/auth";
+const INFLUENCER_API_URL = "http://localhost:5000/api/influencers";
+
+const isMockToken = (token) => token?.startsWith("mock-token-");
+
+const authHeaders = (token = localStorage.getItem("token")) => ({
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${token}`,
+});
+
+const readJson = async (res) => {
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Request failed");
+  }
+
+  return data;
+};
+
+export async function getCurrentInfluencerProfile(token = localStorage.getItem("token")) {
+  if (!token || isMockToken(token)) {
+    return null;
+  }
+
+  const res = await fetch(`${INFLUENCER_API_URL}/profile/me`, {
+    headers: authHeaders(token),
+  });
+
+  const data = await readJson(res);
+  return data.influencer;
+}
+
+export async function saveCurrentInfluencerProfile(profile, token = localStorage.getItem("token")) {
+  if (!token || isMockToken(token)) {
+    return profile;
+  }
+
+  const res = await fetch(`${INFLUENCER_API_URL}/profile/me`, {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify(profile),
+  });
+
+  const data = await readJson(res);
+  return data.influencer;
+}
 
 // Register a new user
 export async function registerUser({ name, email, password, role }) {
-  if (role === "influencer") {
-    return registerInfluencerAccount({ name, email, password });
-  }
-
   const res = await fetch(`${API_URL}/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, email, password, role }),
   });
 
-  const data = await res.json();
+  const data = await readJson(res);
 
-  if (!res.ok) {
-    throw new Error(data.message || "Registration failed");
+  if (data.user?.role === "influencer") {
+    saveInfluencerProfile(
+      data.influencerProfile ||
+        createEmptyInfluencerProfile({
+          name: data.user.name || name,
+          email: data.user.email || email,
+        })
+    );
   }
 
   return data;
@@ -45,11 +94,7 @@ export async function loginUser({ email, password }) {
     body: JSON.stringify({ email, password }),
   });
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Login failed");
-  }
+  const data = await readJson(res);
 
   return data;
 }
@@ -67,11 +112,7 @@ export async function getCurrentUser() {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Failed to fetch user");
-  }
+  const data = await readJson(res);
 
   return data;
 }

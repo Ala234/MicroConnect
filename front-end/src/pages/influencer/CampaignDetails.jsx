@@ -9,6 +9,7 @@ export default function CampaignDetails() {
   const { id } = useParams();
 
   const campaign = getCampaignById(id);
+  const campaignBrandName = campaign?.brandName || campaign?.brand || 'Brand';
   const profileComplete = isInfluencerProfileComplete(getProfileForUser());
   const durationDays = Math.max(
     1,
@@ -88,6 +89,7 @@ export default function CampaignDetails() {
           <div>
             <p className="section-label">Campaign Details</p>
             <h2>{campaign.name}</h2>
+            <p className="text-muted">by {campaignBrandName}</p>
           </div>
           <button className="btn btn-outline" onClick={() => navigate('/influencer')}>
             ← Back
@@ -110,7 +112,7 @@ export default function CampaignDetails() {
                   <p className="section-label">Overview</p>
                   <h3>{campaign.name}</h3>
                   <p className="campaign-overview-subtitle">
-                    {campaign.objective} campaign for {campaign.platforms.join(', ')}
+                    {campaignBrandName} | {campaign.objective} campaign for {campaign.platforms.join(', ')}
                   </p>
                 </div>
                 <span className="campaign-objective-pill">{campaign.objective}</span>
@@ -136,6 +138,10 @@ export default function CampaignDetails() {
               </div>
 
               <div className="campaign-meta">
+                <div className="meta-item">
+                  <span className="meta-label">Brand</span>
+                  <span className="meta-value">{campaignBrandName}</span>
+                </div>
                 <div className="meta-item">
                   <span className="meta-label">Target Audience</span>
                   <span className="meta-value">{campaign.targetAudience}</span>

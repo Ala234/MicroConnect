@@ -41,6 +41,7 @@ function App() {
         <Route path="/influencer/profile" element={<InfluencerProfile />} />
         <Route path="/influencer/applications" element={<MyApplications />} />
         <Route path="/influencer/history" element={<CampaignHistory />} />
+        <Route path="/influencer/disputes" element={<ComplaintsPage />} />
         <Route path="/influencer/complaints" element={<ComplaintsPage />} />
         <Route path="/influencer/campaign/:id" element={<CampaignDetails />} />
         <Route path="/influencer/campaign/:id/history" element={<CampaignHistory />} />

@@ -41,6 +41,7 @@ export default function AvailableCampaigns() {
     return campaigns.filter(campaign => {
       const matchesSearch = searchTerm === '' ||
         campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (campaign.brandName || campaign.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         campaign.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         campaign.objective.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -273,7 +274,10 @@ export default function AvailableCampaigns() {
 
         <div className="campaign-grid">
           {filteredCampaigns.length > 0 ? (
-            filteredCampaigns.map((campaign) => (
+            filteredCampaigns.map((campaign) => {
+              const campaignBrandName = campaign.brandName || campaign.brand || 'Brand';
+
+              return (
               <article className="campaign-card" key={campaign.id}>
                 <div className="campaign-card-media">
                   <img src={campaign.imageSrc} alt={campaign.name} />
@@ -285,6 +289,7 @@ export default function AvailableCampaigns() {
                       <span className="campaign-budget">${campaign.budget}</span>
                     </div>
                     <h3>{campaign.name}</h3>
+                    <p className="campaign-summary-meta">by {campaignBrandName}</p>
                     <p className="campaign-summary-text">{campaign.targetAudience}</p>
                     <p className="campaign-summary-meta">{campaign.platforms.join(', ')} | {campaign.contentType}</p>
                   </div>
@@ -296,7 +301,7 @@ export default function AvailableCampaigns() {
                   </div>
                 </div>
               </article>
-            ))
+            )})
           ) : (
             <div className="no-results">
               <h3>No campaigns found</h3>
