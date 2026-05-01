@@ -5,134 +5,44 @@ import {
   getProfileForUser,
   isInfluencerProfileComplete,
 } from '../../data/influencerAccounts';
+import {
+  formatDisputeDate,
+  generateDisputeId,
+  getDisputesForInfluencer,
+  saveDispute,
+} from '../../data/disputes';
 import '../../styles/influencer.css';
 
-const STORAGE_KEY = 'influencerComplaints';
-const SARAH_STORAGE_KEY = 'sarah.johnson@email.com';
-
-const complaintsByInfluencer = {
-  [SARAH_STORAGE_KEY]: [
-    {
-      complaintId: 'CMP-1001',
-      campaignName: 'Spring Collection',
-      brandName: 'Fashion Forward',
-      contractId: 'CTR-2041',
-      subject: 'Delayed payment release',
-      reason: 'Payment issue',
-      description: 'The campaign was completed and approved, but the agreed payment has not been released on time.',
-      dateSubmitted: '2026-03-22',
-      status: 'In Review',
-      adminResponse: 'Finance verification is in progress. We will update you within 3 business days.'
-    },
-    {
-      complaintId: 'CMP-1002',
-      campaignName: 'Winter Collection',
-      brandName: 'North Thread',
-      contractId: 'CTR-1985',
-      subject: 'Deliverables changed after approval',
-      reason: 'Contract issue',
-      description: 'Additional deliverables were requested after the contract terms were already approved.',
-      dateSubmitted: '2026-02-10',
-      status: 'Resolved',
-      adminResponse: 'The signed contract terms were confirmed and the brand was instructed to follow the original scope.'
-    }
-  ]
-};
-
-const removedComplaintIds = new Set(['CMP-1003']);
-
-const emptyComplaint = () => ({
-  complaintId: '',
+const emptyDispute = () => ({
+  disputeId: '',
   campaignName: '',
   brandName: '',
   contractId: '',
   subject: '',
   reason: '',
+  priority: 'Medium',
   description: '',
   dateSubmitted: '',
   status: 'Pending'
 });
 
-const formatDate = (date) =>
-  new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-const generateComplaintId = (complaints) => {
-  let nextNumber = complaints.reduce((max, complaint) => {
-    const numericId = Number(complaint.complaintId.replace(/\D/g, ''));
-    return Number.isNaN(numericId) ? max : Math.max(max, numericId);
-  }, 1000) + 1;
-
-  while (removedComplaintIds.has(`CMP-${nextNumber}`)) {
-    nextNumber += 1;
-  }
-
-  return `CMP-${nextNumber}`;
-};
-
-const sanitizeComplaints = (complaints) =>
-  complaints.filter((complaint) => !removedComplaintIds.has(complaint.complaintId));
-
-const getScopedStorageKey = (influencerKey) => `${STORAGE_KEY}:${influencerKey}`;
-
-const readJsonArray = (storageKey) => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const rawComplaints = localStorage.getItem(storageKey);
-  if (!rawComplaints) {
-    return null;
-  }
-
-  try {
-    const parsedComplaints = JSON.parse(rawComplaints);
-    return Array.isArray(parsedComplaints) ? parsedComplaints : null;
-  } catch {
-    return null;
-  }
-};
-
-const readStoredComplaints = (influencerKey) => {
-  const scopedComplaints = readJsonArray(getScopedStorageKey(influencerKey));
-  if (scopedComplaints) {
-    return sanitizeComplaints(scopedComplaints);
-  }
-
-  if (influencerKey === SARAH_STORAGE_KEY) {
-    const legacyComplaints = readJsonArray(STORAGE_KEY);
-    return sanitizeComplaints(legacyComplaints || complaintsByInfluencer[SARAH_STORAGE_KEY]);
-  }
-
-  return [];
-};
-
-const writeStoredComplaints = (influencerKey, complaints) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  localStorage.setItem(getScopedStorageKey(influencerKey), JSON.stringify(complaints));
-};
-
 const statusToneMap = {
   Pending: 'pending',
-  'In Review': 'review',
-  Resolved: 'resolved',
-  Closed: 'closed'
+  Resolved: 'resolved'
 };
+
+const priorityOptions = ['Low', 'Medium', 'High'];
 
 export default function ComplaintsPage() {
   const navigate = useNavigate();
   const influencerKey = getInfluencerStorageKey();
+  const currentProfile = getProfileForUser();
+  const influencerEmail = currentProfile.email || influencerKey;
   const profileComplete = isInfluencerProfileComplete(getProfileForUser());
-  const initialComplaints = useMemo(() => readStoredComplaints(influencerKey), [influencerKey]);
-  const [complaints, setComplaints] = useState(initialComplaints);
+  const initialDisputes = useMemo(() => getDisputesForInfluencer(influencerEmail), [influencerEmail]);
+  const [disputes, setDisputes] = useState(initialDisputes);
   const [formData, setFormData] = useState(() => ({
-    ...emptyComplaint(),
+    ...emptyDispute(),
     dateSubmitted: new Date().toISOString().slice(0, 10)
   }));
 
@@ -153,9 +63,9 @@ export default function ComplaintsPage() {
     }));
   };
 
-  const resetForm = (nextComplaints) => {
+  const resetForm = () => {
     setFormData({
-      ...emptyComplaint(),
+      ...emptyDispute(),
       dateSubmitted: new Date().toISOString().slice(0, 10)
     });
   };
@@ -163,19 +73,23 @@ export default function ComplaintsPage() {
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    const nextComplaints = [
-      {
-        ...formData,
-        complaintId: generateComplaintId(complaints),
-        contractId: formData.contractId.trim() || 'Not provided',
-        adminResponse: ''
-      },
-      ...complaints
-    ];
+    const savedDispute = saveDispute({
+      ...formData,
+      disputeId: generateDisputeId(),
+      submittedByRole: 'influencer',
+      submittedByName: currentProfile.name || 'Influencer',
+      submittedByEmail: influencerEmail,
+      contractId: formData.contractId.trim() || 'Not provided',
+      priority: formData.priority,
+      status: 'Pending',
+      adminResponse: ''
+    });
 
-    setComplaints(nextComplaints);
-    writeStoredComplaints(influencerKey, nextComplaints);
-    resetForm(nextComplaints);
+    setDisputes([
+      savedDispute,
+      ...disputes.filter((dispute) => dispute.disputeId !== savedDispute.disputeId)
+    ]);
+    resetForm();
   };
 
   return (
@@ -204,8 +118,8 @@ export default function ComplaintsPage() {
         <section className="campaigns-section padded-top">
           <div className="campaigns-header">
             <div>
-              <p className="section-label">Complaints</p>
-              <h2>Submit and track campaign complaints</h2>
+              <p className="section-label">Disputes</p>
+              <h2>Submit and track campaign disputes</h2>
             </div>
             <button className="btn btn-outline" onClick={() => navigate('/influencer/profile')}>
               Back to Profile
@@ -215,25 +129,39 @@ export default function ComplaintsPage() {
           <div className="complaints-layout">
             <section className="content-card complaints-form-card">
               <div className="complaints-section-header">
-                <p className="section-label">Submit a Complaint</p>
+                <p className="section-label">Raise a Dispute</p>
                 <h3>Report a campaign or contract issue</h3>
               </div>
 
               <form className="complaints-form" onSubmit={handleSubmit}>
                 <div className="complaints-form-grid">
                   <div className="form-group">
-                    <label htmlFor="complaintId">Complaint ID</label>
-                    <input id="complaintId" type="text" value={formData.complaintId} placeholder="Assigned after submission" readOnly />
+                    <label htmlFor="disputeId">Dispute ID</label>
+                    <input id="disputeId" type="text" value={formData.disputeId} placeholder="Assigned after submission" readOnly />
                   </div>
 
                   <div className="form-group">
                     <label htmlFor="dateSubmitted">Date Submitted</label>
-                    <input id="dateSubmitted" type="text" value={formatDate(formData.dateSubmitted)} readOnly />
+                    <input id="dateSubmitted" type="text" value={formatDisputeDate(formData.dateSubmitted)} readOnly />
                   </div>
 
                   <div className="form-group">
                     <label htmlFor="status">Status</label>
                     <input id="status" type="text" value={formData.status} readOnly />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="priority">Priority</label>
+                    <select
+                      id="priority"
+                      value={formData.priority}
+                      onChange={(event) => handleInputChange('priority', event.target.value)}
+                      required
+                    >
+                      {priorityOptions.map((priority) => (
+                        <option key={priority} value={priority}>{priority}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="form-group">
@@ -309,11 +237,11 @@ export default function ComplaintsPage() {
                 </div>
 
                 <div className="complaints-form-actions">
-                  <button type="button" className="btn btn-outline" onClick={() => resetForm(complaints)}>
+                  <button type="button" className="btn btn-outline" onClick={resetForm}>
                     Reset
                   </button>
                   <button type="submit" className="btn btn-primary">
-                    Submit Complaint
+                    Submit Dispute
                   </button>
                 </div>
               </form>
@@ -321,58 +249,62 @@ export default function ComplaintsPage() {
 
             <section className="content-card complaints-history-card">
               <div className="complaints-section-header">
-                <p className="section-label">Complaint History</p>
-                <h3>Track complaint IDs and status updates</h3>
+                <p className="section-label">Dispute History</p>
+                <h3>Track dispute IDs and status updates</h3>
               </div>
 
               <div className="complaints-history-list">
-                {complaints.length > 0 ? complaints.map((complaint) => (
-                  <article className="complaint-history-item" key={complaint.complaintId}>
+                {disputes.length > 0 ? disputes.map((dispute) => (
+                  <article className="complaint-history-item" key={dispute.disputeId}>
                     <div className="complaint-history-header">
                       <div>
-                        <h4>{complaint.complaintId}</h4>
-                        <p>{complaint.campaignName} | {complaint.brandName}</p>
+                        <h4>{dispute.disputeId}</h4>
+                        <p>{dispute.campaignName} | {dispute.brandName}</p>
                       </div>
-                      <span className={`status-badge status-${statusToneMap[complaint.status] || 'pending'}`}>
-                        {complaint.status}
+                      <span className={`status-badge status-${statusToneMap[dispute.status] || 'pending'}`}>
+                        {dispute.status}
                       </span>
                     </div>
 
                     <div className="complaint-history-meta">
                       <div className="history-detail-stat">
                         <span className="meta-label">Contract Reference</span>
-                        <span className="meta-value">{complaint.contractId}</span>
+                        <span className="meta-value">{dispute.contractId}</span>
                       </div>
                       <div className="history-detail-stat">
                         <span className="meta-label">Date Submitted</span>
-                        <span className="meta-value">{formatDate(complaint.dateSubmitted)}</span>
+                        <span className="meta-value">{formatDisputeDate(dispute.dateSubmitted)}</span>
+                      </div>
+                      <div className="history-detail-stat">
+                        <span className="meta-label">Priority</span>
+                        <span className="meta-value">{dispute.priority}</span>
                       </div>
                       <div className="history-detail-stat">
                         <span className="meta-label">Subject</span>
-                        <span className="meta-value">{complaint.subject}</span>
+                        <span className="meta-value">{dispute.subject}</span>
                       </div>
                     </div>
 
                     <div className="complaint-history-body">
                       <div>
                         <h5>Reason</h5>
-                        <p>{complaint.reason}</p>
+                        <p>{dispute.reason}</p>
                       </div>
                       <div>
                         <h5>Description</h5>
-                        <p>{complaint.description}</p>
+                        <p>{dispute.description}</p>
                       </div>
                       <div>
                         <h5>Admin Response / Resolution</h5>
-                        <p>{complaint.adminResponse || 'No admin response yet.'}</p>
+                        <p>{dispute.adminResponse || 'No admin response yet.'}</p>
                       </div>
                     </div>
                   </article>
                 )) : (
                   <div className="no-results">
-                    <h3>No complaints submitted yet</h3>
+                    <h3>No disputes submitted yet</h3>
                     <p>
-                      If you ever face a payment, contract, deliverable, or communication issue, you can submit a complaint here and track the admin response.
+                      If you ever face a payment, contract, deliverable, or communication issue, you can raise a dispute here and track the admin response.
                     </p>
                   </div>
                 )}

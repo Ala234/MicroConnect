@@ -93,10 +93,12 @@ const buildInfluencerPayload = (body, user) => {
     youtube: body.youtube ?? socialLinks?.youtube,
     followers: body.followers,
     engagement: body.engagement,
+    profileImage: body.profileImage,
     categories: categories ?? (body.niche ? [body.niche] : undefined),
     rates: body.rates,
     audience: body.audience,
     status: body.status,
+    isProfileComplete: body.isProfileComplete,
     niche: body.niche,
     socialLinks,
   };
@@ -116,8 +118,10 @@ const applyInfluencerUpdates = (influencer, body) => {
     'youtube',
     'followers',
     'engagement',
+    'profileImage',
     'niche',
     'status',
+    'isProfileComplete',
   ];
 
   fields.forEach((field) => {
@@ -167,8 +171,9 @@ const formatInfluencer = (influencer) => {
     instagram: influencerObject.instagram || socialLinks.instagram || '',
     tiktok: influencerObject.tiktok || socialLinks.tiktok || '',
     youtube: influencerObject.youtube || socialLinks.youtube || '',
-    followers: influencerObject.followers || '0',
-    engagement: influencerObject.engagement || '0%',
+    followers: influencerObject.followers ?? '',
+    engagement: influencerObject.engagement ?? '',
+    profileImage: influencerObject.profileImage || '',
     categories: Array.isArray(influencerObject.categories)
       ? influencerObject.categories
       : influencerObject.niche
@@ -183,6 +188,7 @@ const formatInfluencer = (influencer) => {
       ...audience,
     },
     status: influencerObject.status || 'active',
+    isProfileComplete: Boolean(influencerObject.isProfileComplete),
   };
 };
 

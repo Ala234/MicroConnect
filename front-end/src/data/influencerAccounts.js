@@ -39,6 +39,7 @@ export const existingInfluencerProfiles = {
     },
     profileImage: saraProfileImage,
     status: 'active',
+    isProfileComplete: true,
   },
   mia: {
     id: 'mia',
@@ -65,6 +66,7 @@ export const existingInfluencerProfiles = {
     },
     profileImage: miaProfileImage,
     status: 'active',
+    isProfileComplete: true,
   },
 };
 
@@ -120,6 +122,8 @@ const agePattern = /^\d{1,2}\s*(-\s*\d{1,2}|\+)$/;
 const genderPattern = /^(female|male|mixed|\d+(\.\d+)?%\s*(female|male)|\d+(\.\d+)?%\s*(female|male)\s*\/\s*\d+(\.\d+)?%\s*(female|male))$/i;
 
 const rateHasNumber = (value) => /\d/.test(String(value || ''));
+const hasProfileCompleteFlag = (profile = {}) =>
+  Object.prototype.hasOwnProperty.call(profile, 'isProfileComplete');
 
 const applicationStatusTone = (status) => {
   if (status === 'Accepted') return 'accepted';
@@ -158,6 +162,7 @@ export const createEmptyInfluencerProfile = ({ name = '', email = '' } = {}) => 
   },
   profileImage: '',
   status: 'active',
+  isProfileComplete: false,
 });
 
 export const getInfluencerProfiles = () => ({
@@ -216,6 +221,7 @@ export const normalizeInfluencerProfile = (profile = {}) => ({
     location: '',
     ...(profile.audience || {}),
   },
+  isProfileComplete: hasProfileCompleteFlag(profile) ? profile.isProfileComplete === true : undefined,
 });
 
 export const validateInfluencerProfile = (profile) => {
@@ -314,8 +320,10 @@ export const validateInfluencerProfile = (profile) => {
   };
 };
 
-export const isInfluencerProfileComplete = (profile) =>
-  validateInfluencerProfile(profile).isValid;
+export const isInfluencerProfileComplete = (profile) => {
+  const currentProfile = normalizeInfluencerProfile(profile);
+  return currentProfile.isProfileComplete !== false && validateInfluencerProfile(currentProfile).isValid;
+};
 
 export const getCurrentUser = () => {
   if (typeof window === 'undefined') {
