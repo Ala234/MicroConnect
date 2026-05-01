@@ -115,7 +115,7 @@ export default function AdminDashboard() {
 
             {/* HERO */}
             <div className="dashboard-hero">
-              <h1>Welcome back, {user.name || 'Admin'} 👋</h1>
+              <h1>Welcome back, {user.name || 'Admin'}</h1>
               <p>Monitor platform activity and manage the system</p>
             </div>
 
