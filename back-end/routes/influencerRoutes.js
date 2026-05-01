@@ -54,6 +54,7 @@ const influencerBodyValidation = [
   body('instagram').optional().isString().withMessage('instagram must be a string'),
   body('tiktok').optional().isString().withMessage('tiktok must be a string'),
   body('youtube').optional().isString().withMessage('youtube must be a string'),
+  body('profileImage').optional().isString().withMessage('profileImage must be a string'),
   body('niche').optional().isString().withMessage('niche must be a string'),
   body('socialLinks')
     .optional()
@@ -99,6 +100,10 @@ const influencerBodyValidation = [
     .optional()
     .isIn(['active', 'inactive', 'pending', 'verified', 'suspended'])
     .withMessage('status must be one of: active, inactive, pending, verified, suspended'),
+  body('isProfileComplete')
+    .optional()
+    .isBoolean()
+    .withMessage('isProfileComplete must be a boolean'),
 ];
 
 router.post(

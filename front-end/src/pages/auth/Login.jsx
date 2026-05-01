@@ -1,8 +1,8 @@
 import "./Login.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "../../api/auth";
-import { getProfileForUser, isInfluencerProfileComplete } from "../../data/influencerAccounts";
+import { getCurrentInfluencerProfile, loginUser } from "../../api/auth";
+import { getProfileForUser, isInfluencerProfileComplete, saveInfluencerProfile } from "../../data/influencerAccounts";
 import loginImage from "../../assets/images/login.png";
 
 export default function Login() {
@@ -29,7 +29,19 @@ export default function Login() {
       // Redirect based on role
       if (data.user.role === "brand") navigate("/brand");
       else if (data.user.role === "influencer") {
-        const profile = getProfileForUser(data.user);
+        let profile = getProfileForUser(data.user);
+
+        if (!data.token?.startsWith("mock-token-")) {
+          try {
+            const backendProfile = await getCurrentInfluencerProfile(data.token);
+            if (backendProfile) {
+              profile = saveInfluencerProfile(backendProfile);
+            }
+          } catch {
+            profile = getProfileForUser(data.user);
+          }
+        }
+
         navigate(isInfluencerProfileComplete(profile) ? "/influencer" : "/influencer/setup");
       }
       else if (data.user.role === "admin") navigate("/admin");

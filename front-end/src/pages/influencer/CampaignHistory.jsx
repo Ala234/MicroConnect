@@ -178,6 +178,7 @@ export default function CampaignHistory() {
   const { id } = useParams();
   const campaign = id ? getCampaignById(id) : null;
   const feedback = campaign ? campaignFeedbackSeed[campaign.id] : null;
+  const campaignBrandName = campaign?.brandName || campaign?.brand || feedback?.brandName || 'Brand';
   const profileComplete = isInfluencerProfileComplete(getProfileForUser());
   const influencerFeedback = influencerFeedbackByEmail[getInfluencerStorageKey()] || emptyInfluencerFeedback;
   const hasInfluencerFeedback = influencerFeedback.reviews.length > 0;
@@ -226,7 +227,7 @@ export default function CampaignHistory() {
           <div className="campaigns-header">
             <div>
               <p className="section-label">{id ? 'Campaign History' : 'Brand Feedback'}</p>
-              <h2>{id ? `${campaign.name} feedback history` : 'Brand reviews about your work'}</h2>
+              <h2>{id ? `${campaign.name} feedback history for ${campaignBrandName}` : 'Brand reviews about your work'}</h2>
             </div>
             <button className="btn btn-outline" onClick={() => navigate(id ? '/influencer' : '/influencer/profile')}>
               Back
@@ -243,7 +244,7 @@ export default function CampaignHistory() {
                 <div className="content-card history-social-card">
                   <div className="history-social-header">
                     <p className="section-label">Brand Social Media</p>
-                    <h3>Connect with {feedback.brandName}</h3>
+                    <h3>Connect with {campaignBrandName}</h3>
                   </div>
                   <div className="social-account-grid">
                     {feedback.socials.map((social) => {
@@ -273,7 +274,7 @@ export default function CampaignHistory() {
 
               <article className="content-card history-detail-card">
                 <div className="history-detail-copy">
-                  <p className="history-detail-brand">{feedback.brandName}</p>
+                  <p className="history-detail-brand">{campaignBrandName}</p>
                   <h3 className="history-detail-title">{campaign.name}</h3>
                   <p className="history-detail-summary">{campaign.description}</p>
                 </div>

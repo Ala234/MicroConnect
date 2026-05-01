@@ -1,10 +1,41 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Influencer = require('../models/Influencer');
 
 // Helper: Generate JWT token
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
+  });
+};
+
+const createInitialInfluencerProfile = async (user) => {
+  return Influencer.create({
+    userId: user._id,
+    name: user.name,
+    email: user.email,
+    bio: '',
+    location: '',
+    website: '',
+    instagram: '',
+    tiktok: '',
+    youtube: '',
+    followers: '',
+    engagement: '',
+    categories: [],
+    rates: {
+      post: '',
+      story: '',
+      video: '',
+    },
+    audience: {
+      age: '',
+      gender: '',
+      location: '',
+    },
+    profileImage: '',
+    status: 'active',
+    isProfileComplete: false,
   });
 };
 
@@ -45,6 +76,15 @@ exports.register = async (req, res) => {
     });
     console.log(' User created:', user._id);
 
+<<<<<<< HEAD
+=======
+    let influencerProfile = null;
+    if (role === 'influencer') {
+      influencerProfile = await createInitialInfluencerProfile(user);
+      console.log('Influencer profile created:', influencerProfile._id);
+    }
+
+>>>>>>> 118633d6fcab69ecbe90daa055309293ef200294
     // Generate token
     const token = generateToken(user._id);
     console.log('Token generated');
@@ -58,6 +98,10 @@ exports.register = async (req, res) => {
         email: user.email,
         role: user.role,
       },
+<<<<<<< HEAD
+=======
+      influencerProfile,
+>>>>>>> 118633d6fcab69ecbe90daa055309293ef200294
     });
   } catch (error) {
     console.log(' ERROR:', error);
@@ -125,4 +169,8 @@ exports.getMe = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> 118633d6fcab69ecbe90daa055309293ef200294

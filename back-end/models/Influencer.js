@@ -104,12 +104,17 @@ const influencerSchema = new mongoose.Schema(
     followers: {
       type: String,
       trim: true,
-      default: '0',
+      default: '',
     },
     engagement: {
       type: String,
       trim: true,
-      default: '0%',
+      default: '',
+    },
+    profileImage: {
+      type: String,
+      trim: true,
+      default: '',
     },
     categories: [
       {
@@ -137,6 +142,10 @@ const influencerSchema = new mongoose.Schema(
       type: String,
       enum: ['active', 'inactive', 'pending', 'verified', 'suspended'],
       default: 'active',
+    },
+    isProfileComplete: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

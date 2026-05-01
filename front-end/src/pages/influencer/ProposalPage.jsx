@@ -16,6 +16,7 @@ export default function ProposalPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const campaign = getCampaignById(id);
+  const campaignBrandName = campaign?.brandName || campaign?.brand || 'Brand';
   const returnTo = location.state?.returnTo || `/influencer/campaign/${id}`;
   const profileComplete = isInfluencerProfileComplete(getProfileForUser());
 
@@ -70,7 +71,7 @@ export default function ProposalPage() {
         campaign: campaign.id,
         campaignId: campaign.id,
         campaignName: campaign.name,
-        brandName: campaign.brandName || campaign.name,
+        brandName: campaignBrandName,
         proposal: proposal.trim(),
         status: 'Pending',
         statusTone: 'pending',
@@ -118,7 +119,7 @@ export default function ProposalPage() {
               </div>
               <div className="campaign-header-info">
                 <h1 className="campaign-header-title">{campaign.name}</h1>
-                <p className="campaign-header-meta">Brand Campaign | Open for Applications</p>
+                <p className="campaign-header-meta">{campaignBrandName} | Open for Applications</p>
               </div>
             </div>
           </div>
