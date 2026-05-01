@@ -16,6 +16,7 @@ export default function SocialPlatformIcon({ platform }) {
           <path d="M14.3 4.25c.45 1.28 1.39 2.38 2.62 3.02 1.06.56 2.26.77 3.33.61v2.93a7.44 7.44 0 0 1-3.03-.56v5.11a5.94 5.94 0 1 1-5.94-5.94c.31 0 .62.03.92.08v3.02a2.92 2.92 0 1 0 2 2.78V4.25h.1Z" fill="currentColor" />
         </svg>
       );
+    
     case 'youtube':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
