@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/common/Home";
 import Brand from "./pages/brand/BrandDashboard";
 import AvailableCampaigns from "./pages/influencer/AvailableCampaigns";
+import InfluencerSetup from "./pages/influencer/InfluencerSetup";
 import InfluencerProfile from "./pages/influencer/InfluencerProfile";
 import MyApplications from "./pages/influencer/MyApplications";
 import CampaignDetails from "./pages/influencer/CampaignDetails";
@@ -36,6 +37,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/brand" element={<Brand />} />
         <Route path="/influencer" element={<AvailableCampaigns />} />
+        <Route path="/influencer/setup" element={<InfluencerSetup />} />
         <Route path="/influencer/profile" element={<InfluencerProfile />} />
         <Route path="/influencer/applications" element={<MyApplications />} />
         <Route path="/influencer/history" element={<CampaignHistory />} />

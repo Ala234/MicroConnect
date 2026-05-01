@@ -1,25 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCampaigns } from '../../data/mockCampaigns';
+import {
+  getInfluencerApplications,
+  getProfileForUser,
+  isInfluencerProfileComplete,
+} from '../../data/influencerAccounts';
 import '../../styles/influencer.css';
 
-const applicationSeed = [
-  {
-    campaignId: 'spring-collection',
-    status: 'Under Review',
-    statusTone: 'review',
-    appliedDate: '2026-03-15',
-    proposal:
-      'Excited to collaborate on this spring fashion campaign. My audience responds well to seasonal styling content and product discovery posts.'
-  },
-  {
-    campaignId: 'winter-collection',
-    status: 'Accepted',
-    statusTone: 'accepted',
-    appliedDate: '2026-03-10',
-    proposal:
-      'Perfect fit for my lifestyle content. I can build cozy seasonal looks and short-form videos that show the collection naturally.',
-    brandResponse:
+/*
+
       'We love your content style and audience match. Let’s schedule a call to confirm deliverables and timeline.'
   },
   {
@@ -31,17 +21,29 @@ const applicationSeed = [
       'My audience engages strongly with beauty routines and educational reviews. I would position this launch through a clear, trust-based skincare story.'
   }
 ];
+*/
 
 export default function MyApplications() {
   const navigate = useNavigate();
   const campaigns = getCampaigns();
+  const profileComplete = isInfluencerProfileComplete(getProfileForUser());
 
-  const applications = applicationSeed
+  useEffect(() => {
+    if (!profileComplete) {
+      navigate('/influencer/setup');
+    }
+  }, [profileComplete, navigate]);
+
+  const applications = profileComplete ? getInfluencerApplications()
     .map((application) => {
       const campaign = campaigns.find((item) => item.id === application.campaignId);
       return campaign ? { ...application, campaign } : null;
     })
-    .filter(Boolean);
+    .filter(Boolean) : [];
+
+  if (!profileComplete) {
+    return null;
+  }
 
   return (
     <main className="influencer-page dashboard-page">
@@ -75,7 +77,7 @@ export default function MyApplications() {
         </div>
 
         <div className="applications-list">
-          {applications.map((application) => {
+          {applications.length > 0 ? applications.map((application) => {
             const durationDays = Math.max(
               1,
               Math.ceil(
@@ -85,7 +87,7 @@ export default function MyApplications() {
             );
 
             return (
-            <article className="application-card" key={application.campaign.id}>
+            <article className="application-card" key={application.id}>
               <div className="application-media">
                 <img
                   src={application.campaign.imageSrc}
@@ -161,7 +163,15 @@ export default function MyApplications() {
                 </div>
               </div>
             </article>
-          )})}
+          )}) : (
+            <div className="no-results">
+              <h3>No applications yet</h3>
+              <p>Apply to campaigns that fit your audience and track every proposal here.</p>
+              <button className="btn btn-primary" onClick={() => navigate('/influencer')}>
+                Browse Campaigns
+              </button>
+            </div>
+          )}
         </div>
       </section>
       </div>

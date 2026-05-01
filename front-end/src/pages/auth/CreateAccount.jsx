@@ -34,7 +34,7 @@ export default function CreateAccount() {
 
       // Redirect based on role
       if (data.user.role === "brand") navigate("/brand");
-      else if (data.user.role === "influencer") navigate("/influencer");
+      else if (data.user.role === "influencer") navigate("/influencer/setup");
     } catch (err) {
       alert(err.message);
     } finally {

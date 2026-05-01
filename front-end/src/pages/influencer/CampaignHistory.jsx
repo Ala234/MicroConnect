@@ -1,6 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getCampaignById } from '../../data/mockCampaigns';
+import {
+  getInfluencerStorageKey,
+  getProfileForUser,
+  isInfluencerProfileComplete,
+} from '../../data/influencerAccounts';
 import SocialPlatformIcon from '../../components/influencer/SocialPlatformIcon';
 import '../../styles/influencer.css';
 
@@ -70,33 +75,42 @@ const campaignFeedbackSeed = {
   }
 };
 
-const influencerFeedbackSeed = {
-  averageRating: 4.8,
-  completedCollaborations: 12,
-  repeatBrands: 5,
-  reviews: [
-    {
-      brand: 'Fashion Forward',
-      collaboration: 'Spring Collection Launch',
-      date: '2026-03-18',
-      rating: 5,
-      comment: 'Sarah delivered polished content on time, understood the brief quickly, and communicated clearly through every revision.'
-    },
-    {
-      brand: 'Pure Beauty',
-      collaboration: 'Skin Care Collection',
-      date: '2026-02-04',
-      rating: 5,
-      comment: 'Her audience trust showed in the final content. The review felt authentic, detailed, and aligned with our brand tone.'
-    },
-    {
-      brand: 'North Thread',
-      collaboration: 'Winter Styling Campaign',
-      date: '2026-01-27',
-      rating: 4,
-      comment: 'Reliable and collaborative. She adapted well to feedback and kept the campaign moving without delays.'
-    }
-  ]
+const influencerFeedbackByEmail = {
+  'sarah.johnson@email.com': {
+    averageRating: 4.8,
+    completedCollaborations: 12,
+    repeatBrands: 5,
+    reviews: [
+      {
+        brand: 'Fashion Forward',
+        collaboration: 'Spring Collection Launch',
+        date: '2026-03-18',
+        rating: 5,
+        comment: 'Sarah delivered polished content on time, understood the brief quickly, and communicated clearly through every revision.'
+      },
+      {
+        brand: 'Pure Beauty',
+        collaboration: 'Skin Care Collection',
+        date: '2026-02-04',
+        rating: 5,
+        comment: 'Her audience trust showed in the final content. The review felt authentic, detailed, and aligned with our brand tone.'
+      },
+      {
+        brand: 'North Thread',
+        collaboration: 'Winter Styling Campaign',
+        date: '2026-01-27',
+        rating: 4,
+        comment: 'Reliable and collaborative. She adapted well to feedback and kept the campaign moving without delays.'
+      }
+    ]
+  }
+};
+
+const emptyInfluencerFeedback = {
+  averageRating: null,
+  completedCollaborations: 0,
+  repeatBrands: 0,
+  reviews: []
 };
 
 const formatDate = (date) =>
@@ -164,9 +178,22 @@ export default function CampaignHistory() {
   const { id } = useParams();
   const campaign = id ? getCampaignById(id) : null;
   const feedback = campaign ? campaignFeedbackSeed[campaign.id] : null;
+  const profileComplete = isInfluencerProfileComplete(getProfileForUser());
+  const influencerFeedback = influencerFeedbackByEmail[getInfluencerStorageKey()] || emptyInfluencerFeedback;
+  const hasInfluencerFeedback = influencerFeedback.reviews.length > 0;
   const averageRating = feedback
     ? (feedback.reviews.reduce((total, review) => total + review.rating, 0) / feedback.reviews.length).toFixed(1)
     : null;
+
+  useEffect(() => {
+    if (!profileComplete) {
+      navigate('/influencer/setup');
+    }
+  }, [profileComplete, navigate]);
+
+  if (!profileComplete) {
+    return null;
+  }
 
   if (id && (!campaign || !feedback)) {
     return <CampaignHistoryNotFound />;
@@ -312,50 +339,61 @@ export default function CampaignHistory() {
             </div>
           ) : (
             <div className="influencer-feedback-layout">
-              <section className="content-card influencer-feedback-overview">
-                <div className="influencer-feedback-intro">
-                  <p className="section-label">Profile Feedback</p>
-                  <h3>How brands rate your collaborations</h3>
-                  <p className="text-muted">
-                    This page reflects feedback brands left about your communication, reliability, content quality, and delivery.
-                  </p>
-                </div>
+              {hasInfluencerFeedback ? (
+                <>
+                  <section className="content-card influencer-feedback-overview">
+                    <div className="influencer-feedback-intro">
+                      <p className="section-label">Profile Feedback</p>
+                      <h3>How brands rate your collaborations</h3>
+                      <p className="text-muted">
+                        This page reflects feedback brands left about your communication, reliability, content quality, and delivery.
+                      </p>
+                    </div>
 
-                <div className="influencer-feedback-stats">
-                  <div className="history-detail-stat">
-                    <span className="meta-label">Average Rating</span>
-                    <span className="meta-value">{influencerFeedbackSeed.averageRating}/5</span>
-                  </div>
-                  <div className="history-detail-stat">
-                    <span className="meta-label">Completed Collaborations</span>
-                    <span className="meta-value">{influencerFeedbackSeed.completedCollaborations}</span>
-                  </div>
-                  <div className="history-detail-stat">
-                    <span className="meta-label">Repeat Brands</span>
-                    <span className="meta-value">{influencerFeedbackSeed.repeatBrands}</span>
-                  </div>
-                </div>
-              </section>
-
-              <div className="history-review-list">
-                {influencerFeedbackSeed.reviews.map((review) => (
-                  <section className="history-review-card" key={`${review.brand}-${review.date}`}>
-                    <div className="history-review-header">
-                      <div>
-                        <h4>{review.brand}</h4>
-                        <p>{review.collaboration} | {formatDate(review.date)}</p>
+                    <div className="influencer-feedback-stats">
+                      <div className="history-detail-stat">
+                        <span className="meta-label">Average Rating</span>
+                        <span className="meta-value">{influencerFeedback.averageRating}/5</span>
                       </div>
-                      <div className="history-campaign-rating">
-                        <div className="rating-stars">
-                          {renderStars(review.rating)}
-                        </div>
-                        <span className="rating-text">{review.rating}/5</span>
+                      <div className="history-detail-stat">
+                        <span className="meta-label">Completed Collaborations</span>
+                        <span className="meta-value">{influencerFeedback.completedCollaborations}</span>
+                      </div>
+                      <div className="history-detail-stat">
+                        <span className="meta-label">Repeat Brands</span>
+                        <span className="meta-value">{influencerFeedback.repeatBrands}</span>
                       </div>
                     </div>
-                    <p className="review-text">{review.comment}</p>
                   </section>
-                ))}
-              </div>
+
+                  <div className="history-review-list">
+                    {influencerFeedback.reviews.map((review) => (
+                      <section className="history-review-card" key={`${review.brand}-${review.date}`}>
+                        <div className="history-review-header">
+                          <div>
+                            <h4>{review.brand}</h4>
+                            <p>{review.collaboration} | {formatDate(review.date)}</p>
+                          </div>
+                          <div className="history-campaign-rating">
+                            <div className="rating-stars">
+                              {renderStars(review.rating)}
+                            </div>
+                            <span className="rating-text">{review.rating}/5</span>
+                          </div>
+                        </div>
+                        <p className="review-text">{review.comment}</p>
+                      </section>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="no-results">
+                  <h3>No brand feedback yet</h3>
+                  <p>
+                    Complete your first collaboration and your brand reviews will appear here. Keep building your profile, apply to campaigns, and your future feedback will help you grow.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

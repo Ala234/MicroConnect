@@ -2405,6 +2405,66 @@
   color: var(--text-soft);
 }
 
+.field-control {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  width: min(100%, 240px);
+}
+
+.stat-item .field-control,
+.rate-item .field-control {
+  flex: 1;
+  margin-left: 16px;
+}
+
+.field-error {
+  display: block;
+  width: 100%;
+  margin: 6px 0 0;
+  color: #ef4444 !important;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.input-error,
+.form-group input.input-error,
+.form-group textarea.input-error,
+.field-control input.input-error,
+.social-account-content input.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16) !important;
+}
+
+.form-error-summary {
+  margin: 0 0 24px;
+  padding: 16px 18px;
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  border-radius: 14px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.form-error-summary h3,
+.form-error-summary p {
+  margin: 0;
+  color: #ef4444;
+}
+
+.form-error-summary h3 {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.form-error-summary p {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .proposal-page-section .proposal-main-card {
   background: rgba(255, 255, 255, 0.04) !important;
   border: 1px solid var(--border-soft) !important;

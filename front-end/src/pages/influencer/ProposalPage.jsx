@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getCampaignById } from '../../data/mockCampaigns';
+import {
+  getProfileForUser,
+  isInfluencerProfileComplete,
+  saveInfluencerApplication,
+} from '../../data/influencerAccounts';
 import '../../styles/influencer.css';
 
 export default function ProposalPage() {
@@ -12,6 +17,17 @@ export default function ProposalPage() {
 
   const campaign = getCampaignById(id);
   const returnTo = location.state?.returnTo || `/influencer/campaign/${id}`;
+  const profileComplete = isInfluencerProfileComplete(getProfileForUser());
+
+  useEffect(() => {
+    if (!profileComplete) {
+      navigate('/influencer/setup');
+    }
+  }, [profileComplete, navigate]);
+
+  if (!profileComplete) {
+    return null;
+  }
 
   if (!campaign) {
     return (
@@ -50,6 +66,17 @@ export default function ProposalPage() {
 
   const handleSubmit = () => {
     if (proposal.trim()) {
+      saveInfluencerApplication({
+        campaign: campaign.id,
+        campaignId: campaign.id,
+        campaignName: campaign.name,
+        brandName: campaign.brandName || campaign.name,
+        proposal: proposal.trim(),
+        status: 'Pending',
+        statusTone: 'pending',
+        appliedDate: new Date().toISOString().slice(0, 10),
+        brandResponse: '',
+      });
       setIsSubmitted(true);
       setTimeout(() => {
         navigate('/influencer/applications');

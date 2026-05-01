@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getCampaignById } from '../../data/mockCampaigns';
+import { getProfileForUser, isInfluencerProfileComplete } from '../../data/influencerAccounts';
 import '../../styles/influencer.css';
 
 export default function CampaignDetails() {
@@ -8,10 +9,21 @@ export default function CampaignDetails() {
   const { id } = useParams();
 
   const campaign = getCampaignById(id);
+  const profileComplete = isInfluencerProfileComplete(getProfileForUser());
   const durationDays = Math.max(
     1,
     Math.ceil((new Date(campaign?.endDate) - new Date(campaign?.startDate)) / (1000 * 60 * 60 * 24))
   );
+
+  useEffect(() => {
+    if (!profileComplete) {
+      navigate('/influencer/setup');
+    }
+  }, [profileComplete, navigate]);
+
+  if (!profileComplete) {
+    return null;
+  }
 
   if (!campaign) {
     return (

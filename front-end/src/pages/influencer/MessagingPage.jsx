@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getCampaignById } from '../../data/mockCampaigns';
+import { getProfileForUser, isInfluencerProfileComplete } from '../../data/influencerAccounts';
 import '../../styles/influencer.css';
 
 export default function MessagingPage() {
@@ -19,6 +20,17 @@ export default function MessagingPage() {
 
   const campaign = getCampaignById(id);
   const returnTo = location.state?.returnTo || `/influencer/campaign/${id}`;
+  const profileComplete = isInfluencerProfileComplete(getProfileForUser());
+
+  useEffect(() => {
+    if (!profileComplete) {
+      navigate('/influencer/setup');
+    }
+  }, [profileComplete, navigate]);
+
+  if (!profileComplete) {
+    return null;
+  }
 
   if (!campaign) {
     return (

@@ -2,6 +2,7 @@ import "./Login.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../../api/auth";
+import { getProfileForUser, isInfluencerProfileComplete } from "../../data/influencerAccounts";
 import loginImage from "../../assets/images/login.png";
 
 export default function Login() {
@@ -27,7 +28,10 @@ export default function Login() {
 
       // Redirect based on role
       if (data.user.role === "brand") navigate("/brand");
-      else if (data.user.role === "influencer") navigate("/influencer");
+      else if (data.user.role === "influencer") {
+        const profile = getProfileForUser(data.user);
+        navigate(isInfluencerProfileComplete(profile) ? "/influencer" : "/influencer/setup");
+      }
       else if (data.user.role === "admin") navigate("/admin");
     } catch (err) {
       alert(err.message);
