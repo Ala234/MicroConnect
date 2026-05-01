@@ -2506,3 +2506,17 @@
   transform: none;
   box-shadow: none;
 }
+
+.admin-user-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 24px;
+  background: linear-gradient(90deg, #6d5dfc, #4aa8ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 48px;
+  font-weight: 800;
+  flex-shrink: 0;
+}

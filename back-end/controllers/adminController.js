@@ -3,6 +3,7 @@ const Campaign    = require('../models/Campaign');
 const Brand       = require('../models/Brand');
 const Application = require('../models/Application');
 const { Policy, Commission } = require('../models/Settings');
+const Influencer = require('../models/Influencer');
 
 // ── DASHBOARD STATS ────────────────────────────────────
 // GET /api/admin/stats
@@ -90,6 +91,17 @@ const deleteUser = async (req, res) => {
     res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete user', error: error.message });
+  }
+};
+
+
+const getInfluencerProfile = async (req, res) => {
+  try {
+    const influencer = await Influencer.findOne({ userId: req.params.id });
+    if (!influencer) return res.status(404).json({ message: 'Influencer profile not found' });
+    res.status(200).json(influencer);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch influencer profile', error: error.message });
   }
 };
 
