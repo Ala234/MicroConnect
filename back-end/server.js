@@ -15,6 +15,7 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/brands', require('./routes/brandRoutes'));
+app.use('/api/influencers', require('./routes/influencerRoutes'));
 
 const {
   campaignRouter,
