@@ -15,6 +15,8 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/brands', require('./routes/brandRoutes'));
+app.use('/api/admin',  require('./routes/adminRoutes'));
+console.log('✅ Admin routes loaded');
 
 const {
   campaignRouter,
@@ -23,6 +25,10 @@ const {
 
 app.use('/api/campaigns', campaignRouter);
 app.use('/api/applications', applicationRouter);
+
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+app.use(notFound);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
