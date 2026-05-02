@@ -10,6 +10,7 @@ import {
   Settings,
   ChevronRight,
   ChevronLeft,
+  UserCircle,
 } from 'lucide-react';
 
 const menu = [
@@ -20,6 +21,7 @@ const menu = [
   { name: "Disputes", path: "/disputes", icon: <AlertTriangle size={20} /> },
   { name: "Content Review", path: "/ContentReview", icon: <ClipboardCheck size={20} /> },
   { name: "Settings", path: "/settings", icon: <Settings size={20} /> },
+  { name: "My Profile", path: "/admin/profile", icon: <UserCircle size={20} /> },
 ];
 
 const Sidebar = ({ onCollapse }) => {

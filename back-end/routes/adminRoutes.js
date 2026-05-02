@@ -17,6 +17,12 @@ const {
   deletePolicy,
   getCommission,
   updateCommission,
+  getInfluencerProfile,
+  getBrandProfile,
+  updateInfluencerBioStatus,
+  getAllInfluencers,
+  getAdminProfile,
+  updateAdminProfile
 } = require('../controllers/adminController');
 
 const { protect }   = require('../middleware/authMiddleware');
@@ -25,6 +31,8 @@ const { authorize } = require('../middleware/roleMiddleware');
 // All routes require login + admin role
 router.use(protect);
 router.use(authorize('admin'));
+router.get('/profile', getAdminProfile);
+router.put('/profile', updateAdminProfile);
 
 // ── DASHBOARD ──────────────────────────────────────────
 router.get('/stats', getDashboardStats);
@@ -34,6 +42,8 @@ router.get   ('/users',             getAllUsers);
 router.get   ('/users/:id',         getUserById);
 router.patch ('/users/:id/suspend', toggleSuspendUser);
 router.delete('/users/:id',         deleteUser);
+router.get('/users/:id/influencer-profile', getInfluencerProfile);
+router.get('/users/:id/brand-profile', getBrandProfile);
 
 // ── CAMPAIGNS ──────────────────────────────────────────
 router.get('/campaigns',     getAllCampaigns);
@@ -55,14 +65,18 @@ router.delete('/policies/:id', deletePolicy);
 router.get('/commission', getCommission);
 router.put('/commission', updateCommission);
 
+
+// router.get   ('/content',                getAllContent);
+// router.patch ('/content/:id/approve',    approveContent);
+// router.patch ('/content/:id/flag',       flagContent);
+router.patch('/influencers/:id/bio-status', updateInfluencerBioStatus);
+router.get('/influencers', getAllInfluencers);
+
+
 // ── TODO (no models yet) ───────────────────────────────
 // router.get   ('/contracts',              getAllContracts);
 // router.get   ('/disputes',               getAllDisputes);
 // router.patch ('/disputes/:id/resolve',   resolveDispute);
 // router.get   ('/transactions',           getAllTransactions);
-// router.get   ('/content',                getAllContent);
-// router.patch ('/content/:id/approve',    approveContent);
-// router.patch ('/content/:id/flag',       flagContent);
-// router.delete('/content/:id',            removeContent);
 
 module.exports = router;
