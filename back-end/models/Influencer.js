@@ -147,6 +147,11 @@ const influencerSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    bioState: {
+      type: String,
+      enum: ['Approved', 'Flagged'],
+      default: 'Approved',
+    },
     bioStatus: {
       type: String,
       enum: ['approved', 'flagged'],
@@ -168,6 +173,18 @@ influencerSchema.pre('validate', function syncSocialFields() {
       this.socialLinks[field] = this[field];
     }
   });
+
+  if (!this.bioState && this.bioStatus) {
+    this.bioState = this.bioStatus === 'flagged' ? 'Flagged' : 'Approved';
+  }
+
+  if (!this.bioStatus && this.bioState) {
+    this.bioStatus = this.bioState === 'Flagged' ? 'flagged' : 'approved';
+  }
+
+  if (this.bioState && this.bioStatus) {
+    this.bioStatus = this.bioState === 'Flagged' ? 'flagged' : 'approved';
+  }
 });
 
 module.exports = mongoose.model('Influencer', influencerSchema);

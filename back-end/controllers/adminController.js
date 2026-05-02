@@ -15,7 +15,9 @@ const getDashboardStats = async (req, res) => {
     const totalCampaigns    = await Campaign.countDocuments();
     const activeCampaigns   = await Campaign.countDocuments({ status: 'open' });
     const totalApplications = await Application.countDocuments();
-    const flaggedBios       = await Influencer.countDocuments({ bioStatus: 'flagged' });
+    const flaggedBios       = await Influencer.countDocuments({
+      $or: [{ bioStatus: 'flagged' }, { bioState: 'Flagged' }],
+    });
 
     res.status(200).json({
       totalUsers,
@@ -124,11 +126,25 @@ const getAllInfluencers = async (req, res) => {
   try {
     const { bioStatus, search } = req.query;
     const filter = {};
-    if (bioStatus) filter.bioStatus = bioStatus;
-    if (search)    filter.$or = [
+    const filters = [];
+
+    if (bioStatus) {
+      filters.push({ $or: [
+        { bioStatus },
+        { bioState: bioStatus === 'flagged' ? 'Flagged' : 'Approved' },
+      ] });
+    }
+
+    if (search)    filters.push({ $or: [
       { name:  { $regex: search, $options: 'i' } },
       { email: { $regex: search, $options: 'i' } },
-    ];
+    ] });
+
+    if (filters.length === 1) {
+      Object.assign(filter, filters[0]);
+    } else if (filters.length > 1) {
+      filter.$and = filters;
+    }
 
     const influencers = await Influencer.find(filter)
       .populate('userId', 'name email isActive')
@@ -152,7 +168,10 @@ const updateInfluencerBioStatus = async (req, res) => {
 
     const influencer = await Influencer.findByIdAndUpdate(
       req.params.id,
-      { bioStatus },
+      {
+        bioStatus,
+        bioState: bioStatus === 'flagged' ? 'Flagged' : 'Approved',
+      },
       { new: true }
     );
 

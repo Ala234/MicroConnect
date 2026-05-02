@@ -39,6 +39,8 @@ export const existingInfluencerProfiles = {
     },
     profileImage: saraProfileImage,
     status: 'active',
+    bioState: 'Approved',
+    bioStatus: 'approved',
     isProfileComplete: true,
   },
   mia: {
@@ -66,6 +68,8 @@ export const existingInfluencerProfiles = {
     },
     profileImage: miaProfileImage,
     status: 'active',
+    bioState: 'Approved',
+    bioStatus: 'approved',
     isProfileComplete: true,
   },
 };
@@ -162,6 +166,8 @@ export const createEmptyInfluencerProfile = ({ name = '', email = '' } = {}) => 
   },
   profileImage: '',
   status: 'active',
+  bioState: 'Approved',
+  bioStatus: 'approved',
   isProfileComplete: false,
 });
 
@@ -221,6 +227,8 @@ export const normalizeInfluencerProfile = (profile = {}) => ({
     location: '',
     ...(profile.audience || {}),
   },
+  bioState: profile.bioState === 'Flagged' || profile.bioStatus === 'flagged' ? 'Flagged' : 'Approved',
+  bioStatus: profile.bioState === 'Flagged' || profile.bioStatus === 'flagged' ? 'flagged' : 'approved',
   isProfileComplete: hasProfileCompleteFlag(profile) ? profile.isProfileComplete === true : undefined,
 });
 
