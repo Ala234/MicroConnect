@@ -27,7 +27,7 @@ import "./styles/variables.css";
 import CreateCampaign from "./pages/brand/createCampaign";  
 import DeleteCampaign from "./pages/brand/DeleteCampaign";
 import ContractPage from "./pages/brand/ContractPage";
-import AdminInfluView from "./pages/admin/InfluencerView";
+import UserDetail from "./pages/admin/UserDetail";
 
 import InfluencerProfilee from "./pages/brand/InfluencerProfile";
 function App() {
@@ -62,7 +62,7 @@ function App() {
         <Route path="/disputes" element={<Disputes />} />
         <Route path="/ContentReview" element={<ContentReview />} />
         <Route path="/settings" element={<AdminSettings />} />
-        <Route path="/admin/users/:id" element={<AdminInfluView />} />
+        <Route path="/admin/users/:id" element={<UserDetail />} />
       </Routes>
     </BrowserRouter>
   );

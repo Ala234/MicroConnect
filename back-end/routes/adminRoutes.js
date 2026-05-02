@@ -17,7 +17,8 @@ const {
   deletePolicy,
   getCommission,
   updateCommission,
-  getInfluencerProfile
+  getInfluencerProfile,
+  getBrandProfile
 } = require('../controllers/adminController');
 
 const { protect }   = require('../middleware/authMiddleware');
@@ -36,6 +37,7 @@ router.get   ('/users/:id',         getUserById);
 router.patch ('/users/:id/suspend', toggleSuspendUser);
 router.delete('/users/:id',         deleteUser);
 router.get('/users/:id/influencer-profile', getInfluencerProfile);
+router.get('/users/:id/brand-profile', getBrandProfile);
 
 // ── CAMPAIGNS ──────────────────────────────────────────
 router.get('/campaigns',     getAllCampaigns);
