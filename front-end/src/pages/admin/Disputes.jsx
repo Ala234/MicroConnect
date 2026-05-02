@@ -3,11 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import { MoreVertical } from "lucide-react";
-import {
-  formatDisputeDate,
-  getAllDisputes,
-  updateDispute,
-} from "../../data/disputes";
 
 const DISPUTES_PER_PAGE = 5;
 
@@ -22,20 +17,46 @@ export default function Disputes() {
     navigate("/login");
   };
 
-  // ── State ──────────────────────────────────────────────
-  const [disputes, setDisputes] = useState(() => getAllDisputes());
-
-  const [search,         setSearch]        = useState("");
-  const [statusFilter,   setStatusFilter]  = useState("All");
-  const [priorityFilter, setPriorityFilter]= useState("All");
-  const [openMenu,       setOpenMenu]      = useState(null);
-  const [confirmResolve, setConfirmResolve]= useState(null);
-  const [viewDispute,    setViewDispute]   = useState(null);
-  const [page,           setPage]          = useState(1);
+  const [disputes,       setDisputes]       = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState("");
+  const [successMsg,     setSuccessMsg]     = useState("");
+  const [search,         setSearch]         = useState("");
+  const [statusFilter,   setStatusFilter]   = useState("All");
+  const [priorityFilter, setPriorityFilter] = useState("All");
+  const [openMenu,       setOpenMenu]       = useState(null);
+  const [confirmResolve, setConfirmResolve] = useState(null);
+  const [adminResponse,  setAdminResponse]  = useState("");
+  const [page,           setPage]           = useState(1);
 
   const menuRef = useRef(null);
 
-  // ── Close menu on outside click ────────────────────────
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  };
+
+  const showSuccess = (msg) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(""), 3000);
+  };
+
+  useEffect(() => {
+    const fetchDisputes = async () => {
+      try {
+        const res  = await fetch("/api/admin/disputes", { headers });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+        setDisputes(data);
+      } catch (err) {
+        setError(err.message || "Failed to load disputes");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDisputes();
+  }, []);
+
   useEffect(() => {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -46,53 +67,62 @@ export default function Disputes() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ── Reset page on filter change ────────────────────────
   useEffect(() => { setPage(1); }, [search, statusFilter, priorityFilter]);
 
-  // ── Actions ────────────────────────────────────────────
-  const handleResolve = (id) => {
-    const nextDisputes = updateDispute(id, { status: "Resolved" });
-    setDisputes(nextDisputes);
-    setConfirmResolve(null);
-    setOpenMenu(null);
+  const handleResolve = async (id) => {
+    try {
+      const res  = await fetch(`/api/admin/disputes/${id}/resolve`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ adminResponse }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      setDisputes((prev) =>
+        prev.map((d) =>
+          d._id === id ? { ...d, status: "Resolved", adminResponse } : d
+        )
+      );
+      setConfirmResolve(null);
+      setAdminResponse("");
+      showSuccess("Dispute resolved successfully.");
+    } catch (err) {
+      setError(err.message || "Failed to resolve dispute");
+    }
   };
 
-  const handleView = (dispute) => {
-    setViewDispute(viewDispute === dispute.disputeId ? null : dispute.disputeId);
-    setOpenMenu(null);
-  };
+  const totalDisputes = disputes.length;
+  const pendingCount  = disputes.filter((d) => d.status === "Pending").length;
+  const resolvedCount = disputes.filter((d) => d.status === "Resolved").length;
+  const highPriority  = disputes.filter((d) => d.priority === "High" && d.status === "Pending").length;
 
-  // ── Filtering ──────────────────────────────────────────
   const filtered = useMemo(() => {
     return disputes.filter((d) => {
+      const filedBy  = d.submittedBy?.name || "";
+      const against  = d.against?.name     || "";
+      const campaign = d.campaignId?.title || "";
+
       const matchSearch =
-        d.disputeId.toLowerCase().includes(search.toLowerCase())        ||
-        d.submittedByName.toLowerCase().includes(search.toLowerCase())  ||
-        d.submittedByRole.toLowerCase().includes(search.toLowerCase())  ||
-        d.brandName.toLowerCase().includes(search.toLowerCase())        ||
-        d.campaignName.toLowerCase().includes(search.toLowerCase())     ||
-        d.reason.toLowerCase().includes(search.toLowerCase())           ||
-        d.subject.toLowerCase().includes(search.toLowerCase());
+        d.disputeId?.toLowerCase().includes(search.toLowerCase()) ||
+        d.subject?.toLowerCase().includes(search.toLowerCase())   ||
+        filedBy.toLowerCase().includes(search.toLowerCase())      ||
+        against.toLowerCase().includes(search.toLowerCase())      ||
+        campaign.toLowerCase().includes(search.toLowerCase());
+
       const matchStatus   = statusFilter   === "All" || d.status   === statusFilter;
       const matchPriority = priorityFilter === "All" || d.priority === priorityFilter;
+
       return matchSearch && matchStatus && matchPriority;
     });
   }, [disputes, search, statusFilter, priorityFilter]);
 
-  // ── Stats (derived from real data) ────────────────────
-  const totalDisputes   = disputes.length;
-  const pendingCount    = disputes.filter((d) => d.status === "Pending").length;
-  const resolvedCount   = disputes.filter((d) => d.status === "Resolved").length;
-  const highPriority    = disputes.filter((d) => d.priority === "High" && d.status === "Pending").length;
-
-  // ── Pagination ─────────────────────────────────────────
   const totalPages = Math.ceil(filtered.length / DISPUTES_PER_PAGE);
   const paginated  = filtered.slice(
     (page - 1) * DISPUTES_PER_PAGE,
     page * DISPUTES_PER_PAGE
   );
 
-  // ── Helpers ────────────────────────────────────────────
   const statusClass = (status) => {
     switch (status) {
       case "Pending":  return "status-pending";
@@ -114,7 +144,6 @@ export default function Disputes() {
     <div className={`dashboard-page ${collapsed ? "collapsed" : ""}`}>
       <div className="dashboard-shell">
 
-        {/* TOP BAR */}
         <div className="dashboard-topbar">
           <div className="dashboard-logo">
             <div className="dashboard-logo-icon">M</div>
@@ -128,203 +157,235 @@ export default function Disputes() {
 
           <div className="admin-content">
 
-            {/* HERO */}
             <div className="dashboard-hero">
               <h1>Disputes</h1>
               <p>Review and resolve conflicts between brands and influencers</p>
             </div>
 
-            {/* STATS */}
-            <div className="dashboard-stats">
-              <div className="stat-card">
-                <div className="stat-number">{totalDisputes}</div>
-                <div className="stat-title">Total Disputes</div>
-                <div className="stat-note">All time</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-number">{pendingCount}</div>
-                <div className="stat-title">Pending</div>
-                <div className="stat-note">Awaiting resolution</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-number">{resolvedCount}</div>
-                <div className="stat-title">Resolved</div>
-                <div className="stat-note">Successfully closed</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-number">{highPriority}</div>
-                <div className="stat-title">High Priority</div>
-                <div className="stat-note">Pending & urgent</div>
-              </div>
-            </div>
+            {successMsg && (
+              <div className="settings-success">{successMsg}</div>
+            )}
 
-            {/* CONTROLS */}
-            <div className="users-controls">
-              <input
-                className="txn-search"
-                type="text"
-                placeholder="Search by ID, user or campaign..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <select
-                className="txn-select"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                {["All", "Pending", "Resolved"].map((s) => (
-                  <option key={s} value={s}>{s === "All" ? "All Statuses" : s}</option>
-                ))}
-              </select>
-              <select
-                className="txn-select"
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-              >
-                {["All", "High", "Medium", "Low"].map((p) => (
-                  <option key={p} value={p}>{p === "All" ? "All Priorities" : p}</option>
-                ))}
-              </select>
-            </div>
+            {error && (
+              <div className="confirm-row">
+                <span className="error-text">{error}</span>
+              </div>
+            )}
 
-            {/* COUNT */}
-            <div className="txn-summary">
-              <span>Showing <strong>{filtered.length}</strong> of <strong>{totalDisputes}</strong> disputes</span>
-            </div>
+            {loading ? (
+              <div className="txn-summary">
+                <span className="loading-text">Loading disputes...</span>
+              </div>
+            ) : (
+              <>
+                <div className="dashboard-stats">
+                  <div className="stat-card">
+                    <div className="stat-number">{totalDisputes}</div>
+                    <div className="stat-title">Total Disputes</div>
+                    <div className="stat-note">All time</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-number">{pendingCount}</div>
+                    <div className="stat-title">Pending</div>
+                    <div className="stat-note">Awaiting resolution</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-number">{resolvedCount}</div>
+                    <div className="stat-title">Resolved</div>
+                    <div className="stat-note">Successfully closed</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-number">{highPriority}</div>
+                    <div className="stat-title">High Priority</div>
+                    <div className="stat-note">Pending & urgent</div>
+                  </div>
+                </div>
 
-            {/* TABLE */}
-            <div className="users-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>No.</th>
-                    <th>Dispute ID</th>
-                    <th>Submitted By</th>
-                    <th>Role</th>
-                    <th>Campaign</th>
-                    <th>Brand</th>
-                    <th>Reason</th>
-                    <th>Subject</th>
-                    <th>Date</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginated.length === 0 ? (
-                    <tr>
-                      <td colSpan={12} style={{ textAlign: "center", padding: "28px", color: "#b8c2e4" }}>
-                        No disputes match your filters.
-                      </td>
-                    </tr>
-                  ) : (
-                    paginated.map((d, index) => (
-                      <>
-                        <tr key={d.disputeId}>
-                          <td>{(page - 1) * DISPUTES_PER_PAGE + index + 1}</td>
-                          <td className="txn-id">{d.disputeId}</td>
-                          <td>{d.submittedByName}</td>
-                          <td>{d.submittedByRole}</td>
-                          <td>{d.campaignName}</td>
-                          <td>{d.brandName}</td>
-                          <td className="dispute-reason" title={d.reason}>{d.reason}</td>
-                          <td className="dispute-reason" title={d.subject}>{d.subject}</td>
-                          <td className="txn-date">{formatDisputeDate(d.dateSubmitted)}</td>
-                          <td className={priorityClass(d.priority)}>{d.priority}</td>
-                          <td className={statusClass(d.status)}>{d.status}</td>
-                          <td className="action-cell" ref={openMenu === d.disputeId ? menuRef : null}>
-                            <button
-                              className="action-btn"
-                              onClick={() => setOpenMenu(openMenu === d.disputeId ? null : d.disputeId)}
-                            >
-                              <MoreVertical size={18} />
-                            </button>
+                <div className="users-controls">
+                  <input
+                    className="txn-search"
+                    type="text"
+                    placeholder="Search by ID, user or campaign..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <select
+                    className="txn-select"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    {["All", "Pending", "Resolved"].map((s) => (
+                      <option key={s} value={s}>
+                        {s === "All" ? "All Statuses" : s}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    className="txn-select"
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value)}
+                  >
+                    {["All", "High", "Medium", "Low"].map((p) => (
+                      <option key={p} value={p}>
+                        {p === "All" ? "All Priorities" : p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                            {openMenu === d.disputeId && (
-                              <div className="action-menu">
-                                <div onClick={() => handleView(d)}>
-                                  View Details
-                                </div>
-                                {d.status === "Pending" && (
-                                  <div onClick={() => {
-                                    setConfirmResolve(d.disputeId);
-                                    setOpenMenu(null);
-                                  }}>
-                                    Mark as Resolved
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                <div className="txn-summary">
+                  <span>
+                    Showing <strong>{filtered.length}</strong> of{" "}
+                    <strong>{totalDisputes}</strong> disputes
+                  </span>
+                </div>
+
+                <div className="users-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>No.</th>
+                        <th>ID</th>
+                        <th>Filed By</th>
+                        <th>Against</th>
+                        <th>Campaign</th>
+                        <th>Subject</th>
+                        <th>Reason</th>
+                        <th>Date</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginated.length === 0 ? (
+                        <tr>
+                          <td colSpan={11} className="table-empty-cell">
+                            No disputes match your filters.
                           </td>
                         </tr>
-
-                        {/* INLINE RESOLVE CONFIRM */}
-                        {confirmResolve === d.disputeId && (
-                          <tr key={`confirm-${d.disputeId}`}>
-                            <td colSpan={12}>
-                              <div className="confirm-row">
-                                <span>Mark <strong>{d.disputeId}</strong> as resolved?</span>
+                      ) : (
+                        paginated.map((d, index) => (
+                          <>
+                            <tr key={d._id}>
+                              <td>{(page - 1) * DISPUTES_PER_PAGE + index + 1}</td>
+                              <td className="txn-id">{d.disputeId}</td>
+                              <td>{d.submittedBy?.name || "—"}</td>
+                              <td>{d.against?.name     || "—"}</td>
+                              <td>{d.campaignId?.title || "—"}</td>
+                              <td className="dispute-reason" title={d.subject}>
+                                {d.subject}
+                              </td>
+                              <td className="txn-date">{d.reason}</td>
+                              <td className="txn-date">
+                                {new Date(d.createdAt).toLocaleDateString("en-GB", {
+                                  day: "numeric", month: "short", year: "numeric",
+                                })}
+                              </td>
+                              <td className={priorityClass(d.priority)}>{d.priority}</td>
+                              <td className={statusClass(d.status)}>{d.status}</td>
+                              <td
+                                className="action-cell"
+                                ref={openMenu === d._id ? menuRef : null}
+                              >
                                 <button
-                                  className="confirm-yes"
-                                  onClick={() => handleResolve(d.disputeId)}
+                                  className="action-btn"
+                                  onClick={() =>
+                                    setOpenMenu(openMenu === d._id ? null : d._id)
+                                  }
                                 >
-                                  Yes, Resolve
+                                  <MoreVertical size={18} />
                                 </button>
-                                <button
-                                  className="confirm-no"
-                                  onClick={() => setConfirmResolve(null)}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
 
-                        {viewDispute === d.disputeId && (
-                          <tr key={`details-${d.disputeId}`}>
-                            <td colSpan={12}>
-                              <div className="confirm-row">
-                                <span><strong>Description:</strong> {d.description}</span>
-                                <span><strong>Contract:</strong> {d.contractId}</span>
-                                <span><strong>Submitted By Email:</strong> {d.submittedByEmail || 'Not provided'}</span>
-                                <span><strong>Admin Response:</strong> {d.adminResponse || 'No admin response yet.'}</span>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                                {openMenu === d._id && (
+                                  <div className="action-menu">
+                                    <div onClick={() => {
+                                      navigate(`/admin/disputes/${d._id}`);
+                                      setOpenMenu(null);
+                                    }}>
+                                      View Details
+                                    </div>
+                                    {d.status === "Pending" && (
+                                      <div onClick={() => {
+                                        setConfirmResolve(d._id);
+                                        setAdminResponse(d.adminResponse || "");
+                                        setOpenMenu(null);
+                                      }}>
+                                        Mark as Resolved
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
 
-              {/* PAGINATION */}
-              <div className="pagination">
-                <button
-                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                  disabled={page === 1}
-                >
-                  Previous
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <button
-                    key={i + 1}
-                    className={page === i + 1 ? "active" : ""}
-                    onClick={() => setPage(i + 1)}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-                <button
-                  onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                  disabled={page === totalPages || totalPages === 0}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
+                            {confirmResolve === d._id && (
+                              <tr key={`confirm-${d._id}`}>
+                                <td colSpan={11}>
+                                  <div className="resolve-confirm-row">
+                                    <span className="resolve-confirm-label">
+                                      Resolve dispute <strong>{d.disputeId}</strong>? Add an optional response:
+                                    </span>
+                                    <textarea
+                                      className="resolve-textarea"
+                                      value={adminResponse}
+                                      onChange={(e) => setAdminResponse(e.target.value)}
+                                      placeholder="Optional admin response to both parties..."
+                                      rows={2}
+                                    />
+                                    <div className="resolve-confirm-actions">
+                                      <button
+                                        className="confirm-yes"
+                                        onClick={() => handleResolve(d._id)}
+                                      >
+                                        Yes, Resolve
+                                      </button>
+                                      <button
+                                        className="confirm-no"
+                                        onClick={() => {
+                                          setConfirmResolve(null);
+                                          setAdminResponse("");
+                                        }}
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+
+                  <div className="pagination">
+                    <button
+                      onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                      disabled={page === 1}
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => (
+                      <button
+                        key={i + 1}
+                        className={page === i + 1 ? "active" : ""}
+                        onClick={() => setPage(i + 1)}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                      disabled={page === totalPages || totalPages === 0}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
 
           </div>
         </div>

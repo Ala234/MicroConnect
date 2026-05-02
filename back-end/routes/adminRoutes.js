@@ -22,7 +22,11 @@ const {
   updateInfluencerBioStatus,
   getAllInfluencers,
   getAdminProfile,
-  updateAdminProfile
+  updateAdminProfile,
+  getAllDisputes,
+  resolveDispute,
+  getDisputeStats,
+  getDisputeById,
 } = require('../controllers/adminController');
 
 const { protect }   = require('../middleware/authMiddleware');
@@ -66,12 +70,15 @@ router.get('/commission', getCommission);
 router.put('/commission', updateCommission);
 
 
-// router.get   ('/content',                getAllContent);
-// router.patch ('/content/:id/approve',    approveContent);
-// router.patch ('/content/:id/flag',       flagContent);
+// ── ContentReview ───────────────────────────────────────────
 router.patch('/influencers/:id/bio-status', updateInfluencerBioStatus);
 router.get('/influencers', getAllInfluencers);
 
+// ── DISPUTES ───────────────────────────────────────────
+router.get  ('/disputes',              getAllDisputes);
+router.get  ('/disputes/stats',        getDisputeStats);
+router.patch('/disputes/:id/resolve',  resolveDispute);
+router.get  ('/disputes/:id',          getDisputeById);
 
 // ── TODO (no models yet) ───────────────────────────────
 // router.get   ('/contracts',              getAllContracts);
