@@ -7,7 +7,7 @@ import {
 } from "../data/influencerAccounts";
 
 // Base URL of the backend
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace(/\/$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
 const API_URL = `${API_BASE_URL}/auth`;
 const INFLUENCER_API_URL = `${API_BASE_URL}/influencers`;
 
