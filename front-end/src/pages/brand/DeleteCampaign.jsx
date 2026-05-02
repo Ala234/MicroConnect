@@ -7,6 +7,7 @@ import {
   FiDollarSign,
   FiEdit2,
   FiFileText,
+  FiFilter,
   FiLogOut,
   FiTrash2,
   FiUsers,
@@ -16,25 +17,7 @@ import { deleteCampaignById, fetchCampaignById } from "../../data/mockCampaigns"
 import { getApplicationsForCampaign, updateApplicationStatus } from "../../api/applications";
 import BrandChatModal from "./BrandChatModal";
 
-const filterLabels = ["Followers", "Age Group", "Target Aud", "Engagement lvl"];
-
-const getNumericValue = (value) => Number.parseFloat(String(value).replace(/[^0-9.]/g, ""));
-
-const getAgeRangeFromAudience = (targetAudience) => {
-  const matches = String(targetAudience || "").match(/\d+/g);
-  if (!matches || matches.length < 2) return null;
-  const [minAge, maxAge] = matches.map(Number);
-  return { minAge, maxAge };
-};
-
-const matchesTargetAudience = (applicant, campaign) => {
-  const audienceTerms = String(campaign?.targetAudience || "")
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((term) => term.length > 3);
-  const applicantText = `${applicant.influencerName || ""} ${(applicant.influencerNiches || []).join(" ")}`.toLowerCase();
-  return audienceTerms.some((term) => applicantText.includes(term));
-};
+const getNumericValue = (value) => Number.parseFloat(String(value).replace(/[^0-9.]/g, "")) || 0;
 
 const getDurationLabel = (startDate, endDate) => {
   if (!startDate || !endDate) return "Not set";
@@ -51,12 +34,19 @@ export default function DeleteCampaign() {
   const campaignId = searchParams.get("id");
   const [campaign, setCampaign] = useState(null);
   const [applications, setApplications] = useState([]);
-  const [activeFilters, setActiveFilters] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [activeChatApplicant, setActiveChatApplicant] = useState(null);
   const [banner, setBanner] = useState(null);
   const [campaignDeleted, setCampaignDeleted] = useState(false);
   const [status, setStatus] = useState("loading");
+
+  // Filters
+  const [statusFilter, setStatusFilter] = useState("all"); // all, pending, accepted, rejected
+  const [showFilters, setShowFilters] = useState(false);
+  const [minFollowers, setMinFollowers] = useState("");
+  const [minEngagement, setMinEngagement] = useState("");
+  const [minAge, setMinAge] = useState("");
+  const [maxAge, setMaxAge] = useState("");
 
   useEffect(() => {
     if (!campaignId) {
@@ -95,12 +85,6 @@ export default function DeleteCampaign() {
   };
 
   const showBanner = (title, text) => setBanner({ title, text });
-
-  const toggleFilter = (label) => {
-    setActiveFilters((current) =>
-      current.includes(label) ? current.filter((i) => i !== label) : [...current, label]
-    );
-  };
 
   const handleApplicantAction = async (application, nextStatus) => {
     if (nextStatus === "accepted") {
@@ -142,6 +126,13 @@ export default function DeleteCampaign() {
     }
   };
 
+  const clearFilters = () => {
+    setMinFollowers("");
+    setMinEngagement("");
+    setMinAge("");
+    setMaxAge("");
+  };
+
   if (status === "missing") {
     return (
       <div className="dashboard-page campaign-review-page">
@@ -162,26 +153,46 @@ export default function DeleteCampaign() {
 
   if (!campaign) return null;
 
-  const filteredApplications = applications.filter((app) =>
-    activeFilters.every((filterLabel) => {
-      if (filterLabel === "Followers") {
-        return getNumericValue(app.influencerFollowers) >= 40;
-      }
-      if (filterLabel === "Age Group") {
-        const ageRange = getAgeRangeFromAudience(campaign.targetAudience);
-        if (!ageRange) return true;
-        const age = getNumericValue(app.influencerAge);
-        return age >= ageRange.minAge && age <= ageRange.maxAge;
-      }
-      if (filterLabel === "Target Aud") {
-        return matchesTargetAudience(app, campaign);
-      }
-      if (filterLabel === "Engagement lvl") {
-        return getNumericValue(app.influencerEngagement) >= 9;
-      }
-      return true;
-    })
-  );
+  // Apply Filters
+  const filteredApplications = applications.filter((app) => {
+    // Status filter
+    if (statusFilter !== "all" && app.status !== statusFilter) {
+      return false;
+    }
+
+    // Followers filter
+    if (minFollowers) {
+      const followers = getNumericValue(app.influencerFollowers);
+      const followersMultiplier = String(app.influencerFollowers || "").toLowerCase().includes("k") ? 1000 : 1;
+      const actualFollowers = followers * followersMultiplier;
+      const minVal = getNumericValue(minFollowers);
+      if (actualFollowers < minVal) return false;
+    }
+
+    // Engagement filter
+    if (minEngagement) {
+      const engagement = getNumericValue(app.influencerEngagement);
+      if (engagement < getNumericValue(minEngagement)) return false;
+    }
+
+    // Age filter
+    if (minAge || maxAge) {
+      const age = getNumericValue(app.influencerAge);
+      if (age === 0) return false;
+      if (minAge && age < getNumericValue(minAge)) return false;
+      if (maxAge && age > getNumericValue(maxAge)) return false;
+    }
+
+    return true;
+  });
+
+  // Status counts for tabs
+  const statusCounts = {
+    all: applications.length,
+    pending: applications.filter((a) => a.status === "pending").length,
+    accepted: applications.filter((a) => a.status === "accepted").length,
+    rejected: applications.filter((a) => a.status === "rejected").length,
+  };
 
   const metrics = [
     {
@@ -209,6 +220,8 @@ export default function DeleteCampaign() {
       tone: "mint",
     },
   ];
+
+  const hasActiveFilters = minFollowers || minEngagement || minAge || maxAge;
 
   return (
     <div className="dashboard-page campaign-review-page">
@@ -317,24 +330,100 @@ export default function DeleteCampaign() {
           <div className="campaign-review-applications">
             <div className="campaign-review-toolbar">
               <div className="campaign-review-section-title">
-                <h2>Influencers Application</h2>
-                <p>{filteredApplications.length} Applications Found</p>
-              </div>
-              <div className="campaign-filter-row">
-                {filterLabels.map((label) => (
-                  <button
-                    className={`campaign-filter-chip ${
-                      activeFilters.includes(label) ? "active" : ""
-                    }`}
-                    key={label}
-                    type="button"
-                    onClick={() => toggleFilter(label)}
-                  >
-                    {label}
-                  </button>
-                ))}
+                <h2>Influencers Applications</h2>
+                <p>{filteredApplications.length} of {applications.length} shown</p>
               </div>
             </div>
+
+            {/* Status Tabs */}
+            <div className="status-tabs">
+              <button
+                className={`status-tab ${statusFilter === "all" ? "active" : ""}`}
+                onClick={() => setStatusFilter("all")}
+              >
+                All <span className="status-tab-badge">{statusCounts.all}</span>
+              </button>
+              <button
+                className={`status-tab ${statusFilter === "pending" ? "active" : ""}`}
+                onClick={() => setStatusFilter("pending")}
+              >
+                Pending <span className="status-tab-badge pending">{statusCounts.pending}</span>
+              </button>
+              <button
+                className={`status-tab ${statusFilter === "accepted" ? "active" : ""}`}
+                onClick={() => setStatusFilter("accepted")}
+              >
+                Accepted <span className="status-tab-badge accepted">{statusCounts.accepted}</span>
+              </button>
+              <button
+                className={`status-tab ${statusFilter === "rejected" ? "active" : ""}`}
+                onClick={() => setStatusFilter("rejected")}
+              >
+                Rejected <span className="status-tab-badge rejected">{statusCounts.rejected}</span>
+              </button>
+
+              <button
+                className={`filter-toggle-btn ${showFilters ? "active" : ""} ${
+                  hasActiveFilters ? "has-filters" : ""
+                }`}
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <FiFilter />
+                <span>Filters</span>
+                {hasActiveFilters && <span className="filter-dot"></span>}
+              </button>
+            </div>
+
+            {/* Custom Filters Panel */}
+            {showFilters && (
+              <div className="custom-filters-panel">
+                <div className="custom-filter-group">
+                  <label>Minimum Followers</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 10000"
+                    value={minFollowers}
+                    onChange={(e) => setMinFollowers(e.target.value)}
+                  />
+                </div>
+
+                <div className="custom-filter-group">
+                  <label>Minimum Engagement (%)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 5"
+                    step="0.1"
+                    value={minEngagement}
+                    onChange={(e) => setMinEngagement(e.target.value)}
+                  />
+                </div>
+
+                <div className="custom-filter-group">
+                  <label>Age Range</label>
+                  <div className="age-range-inputs">
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={minAge}
+                      onChange={(e) => setMinAge(e.target.value)}
+                    />
+                    <span className="age-separator">–</span>
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={maxAge}
+                      onChange={(e) => setMaxAge(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {hasActiveFilters && (
+                  <button className="clear-filters-btn" onClick={clearFilters}>
+                    <FiX /> Clear all
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="campaign-application-list">
               {filteredApplications.length === 0 ? (

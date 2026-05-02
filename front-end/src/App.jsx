@@ -74,6 +74,7 @@ function App() {
         <Route path="/admin/users/:id" element={<UserDetail />} />
         <Route path="/admin/profile" element={<AdminProfile />} />
         <Route path="/admin/disputes/:id" element={<DisputeDetail />} />
+        <Route path="/influencer/applications" element={<MyApplications />} />
       </Routes>
     </BrowserRouter>
   );
