@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
-import { getCampaigns } from '../../data/mockCampaigns';
+import { fetchCampaigns } from '../../data/mockCampaigns';
 import { getCurrentUser, getProfileForUser, isInfluencerProfileComplete } from '../../data/influencerAccounts';
 import '../../styles/influencer.css';
 
@@ -13,7 +13,9 @@ const getProfileInitial = (name = '') =>
 
 export default function AvailableCampaigns() {
   const navigate = useNavigate();
-  const campaigns = getCampaigns().filter((campaign) => campaign.id !== 'summer-collection');
+  const [campaigns, setCampaigns] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const currentUser = getCurrentUser();
   const influencerProfile = getProfileForUser(currentUser);
   const profileComplete = isInfluencerProfileComplete(influencerProfile);
@@ -33,7 +35,25 @@ export default function AvailableCampaigns() {
   useEffect(() => {
     if (!profileComplete) {
       navigate('/influencer/setup');
+      return;
     }
+
+    // Fetch campaigns from MongoDB backend
+    const loadCampaigns = async () => {
+      setIsLoading(true);
+      try {
+        const allCampaigns = await fetchCampaigns();
+        // Filter out summer-collection (was a mock)
+        setCampaigns(allCampaigns.filter((c) => c.id !== 'summer-collection'));
+      } catch (err) {
+        console.error('Failed to fetch campaigns:', err);
+        setCampaigns([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCampaigns();
   }, [profileComplete, navigate]);
 
   // Close dropdown when clicking outside
@@ -53,8 +73,8 @@ export default function AvailableCampaigns() {
       const matchesSearch = searchTerm === '' ||
         campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (campaign.brandName || campaign.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        campaign.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        campaign.objective.toLowerCase().includes(searchTerm.toLowerCase());
+        (campaign.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (campaign.objective || '').toLowerCase().includes(searchTerm.toLowerCase());
 
       const budget = parseInt(campaign.budget);
       const matchesBudget = budgetFilter === '' ||
@@ -62,23 +82,20 @@ export default function AvailableCampaigns() {
         (budgetFilter === 'medium' && budget >= 1200 && budget < 2000) ||
         (budgetFilter === 'high' && budget >= 2000);
 
-      // Age filter logic based on target audience
       const matchesAge = ageFilter === '' || (() => {
-        const targetAudience = campaign.targetAudience.toLowerCase();
+        const targetAudience = (campaign.targetAudience || '').toLowerCase();
         if (ageFilter === 'teens') return targetAudience.includes('13') || targetAudience.includes('teens') || targetAudience.includes('18-24');
         if (ageFilter === 'young-adults') return targetAudience.includes('20') || targetAudience.includes('25') || targetAudience.includes('20-29') || targetAudience.includes('18-40');
         if (ageFilter === 'adults') return targetAudience.includes('30') || targetAudience.includes('35') || targetAudience.includes('30+');
         return false;
       })();
 
-      // Audience filter logic
-      const matchesAudience = audienceFilter.gender.length === 0 && audienceFilter.interests.length === 0 || (() => {
-        const targetAudience = campaign.targetAudience.toLowerCase();
-        const contentType = campaign.contentType.toLowerCase();
-        const description = campaign.description.toLowerCase();
-        const objective = campaign.objective.toLowerCase();
+      const matchesAudience = (audienceFilter.gender.length === 0 && audienceFilter.interests.length === 0) || (() => {
+        const targetAudience = (campaign.targetAudience || '').toLowerCase();
+        const contentType = (campaign.contentType || '').toLowerCase();
+        const description = (campaign.description || '').toLowerCase();
+        const objective = (campaign.objective || '').toLowerCase();
 
-        // Check gender matches - if any selected gender matches
         const genderMatch = audienceFilter.gender.length === 0 || audienceFilter.gender.some(gender => {
           if (gender === 'female') return targetAudience.includes('women') || targetAudience.includes('female') || targetAudience.includes('girls');
           if (gender === 'male') return targetAudience.includes('men') || targetAudience.includes('male') || targetAudience.includes('boys');
@@ -86,7 +103,6 @@ export default function AvailableCampaigns() {
           return false;
         });
 
-        // Check interests matches - if any selected interest matches
         const interestsMatch = audienceFilter.interests.length === 0 || audienceFilter.interests.some(interest => {
           if (interest === 'fashion') return objective.includes('fashion') || contentType.includes('fashion') || description.includes('fashion') || targetAudience.includes('fashion');
           if (interest === 'beauty') return objective.includes('beauty') || contentType.includes('beauty') || description.includes('beauty') || targetAudience.includes('beauty') || contentType.includes('skincare');
@@ -287,35 +303,41 @@ export default function AvailableCampaigns() {
         </div>
 
         <div className="campaign-grid">
-          {filteredCampaigns.length > 0 ? (
+          {isLoading ? (
+            <div className="no-results">
+              <h3>Loading campaigns...</h3>
+              <p>Please wait while we fetch the latest opportunities.</p>
+            </div>
+          ) : filteredCampaigns.length > 0 ? (
             filteredCampaigns.map((campaign) => {
               const campaignBrandName = campaign.brandName || campaign.brand || 'Brand';
 
               return (
-              <article className="campaign-card" key={campaign.id}>
-                <div className="campaign-card-media">
-                  <img src={campaign.imageSrc} alt={campaign.name} />
-                </div>
-                <div className="campaign-content">
-                  <div className="campaign-summary">
-                    <div className="campaign-info-top">
-                      <span className="campaign-objective-pill">{campaign.objective}</span>
-                      <span className="campaign-budget">${campaign.budget}</span>
+                <article className="campaign-card" key={campaign.id || campaign._id}>
+                  <div className="campaign-card-media">
+                    <img src={campaign.imageSrc} alt={campaign.name} />
+                  </div>
+                  <div className="campaign-content">
+                    <div className="campaign-summary">
+                      <div className="campaign-info-top">
+                        <span className="campaign-objective-pill">{campaign.objective}</span>
+                        <span className="campaign-budget">${campaign.budget}</span>
+                      </div>
+                      <h3>{campaign.name}</h3>
+                      <p className="campaign-summary-meta">by {campaignBrandName}</p>
+                      <p className="campaign-summary-text">{campaign.targetAudience}</p>
+                      <p className="campaign-summary-meta">{(campaign.platforms || []).join(', ')} | {campaign.contentType}</p>
                     </div>
-                    <h3>{campaign.name}</h3>
-                    <p className="campaign-summary-meta">by {campaignBrandName}</p>
-                    <p className="campaign-summary-text">{campaign.targetAudience}</p>
-                    <p className="campaign-summary-meta">{campaign.platforms.join(', ')} | {campaign.contentType}</p>
+                    <div className="campaign-actions">
+                      <button className="btn btn-secondary" onClick={() => navigate(`/influencer/campaign/${campaign.id || campaign._id}`)}>Details</button>
+                      <button className="btn btn-outline" onClick={() => navigate(`/influencer/campaign/${campaign.id || campaign._id}/history`)}>
+                        Campaign History
+                      </button>
+                    </div>
                   </div>
-                  <div className="campaign-actions">
-                    <button className="btn btn-secondary" onClick={() => navigate(`/influencer/campaign/${campaign.id}`)}>Details</button>
-                    <button className="btn btn-outline" onClick={() => navigate(`/influencer/campaign/${campaign.id}/history`)}>
-                      Campaign History
-                    </button>
-                  </div>
-                </div>
-              </article>
-            )})
+                </article>
+              );
+            })
           ) : (
             <div className="no-results">
               <h3>No campaigns found</h3>

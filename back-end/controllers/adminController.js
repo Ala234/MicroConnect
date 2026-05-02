@@ -192,11 +192,12 @@ const updateInfluencerBioStatus = async (req, res) => {
 // GET /api/admin/campaigns
 const getAllCampaigns = async (req, res) => {
   try {
-    const { status, search } = req.query;
+    const { status, search, brandId } = req.query;
 
     const filter = {};
-    if (status) filter.status = status;
-    if (search) filter.$or = [
+    if (status)  filter.status  = status;
+    if (brandId) filter.brandId = brandId;
+    if (search)  filter.$or = [
       { title:       { $regex: search, $options: 'i' } },
       { description: { $regex: search, $options: 'i' } },
     ];
