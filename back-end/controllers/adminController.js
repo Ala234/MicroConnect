@@ -115,6 +115,52 @@ const getBrandProfile = async (req, res) => {
   }
 };
 
+const updateInfluencerBioStatus = async (req, res) => {
+  try {
+    const { bioStatus } = req.body;
+    const allowed = ['approved', 'flagged'];
+
+    if (!allowed.includes(bioStatus)) {
+      return res.status(400).json({ message: 'bioStatus must be approved or flagged' });
+    }
+
+    const influencer = await Influencer.findByIdAndUpdate(
+      req.params.id,
+      { bioStatus },
+      { new: true }
+    );
+
+    if (!influencer) return res.status(404).json({ message: 'Influencer not found' });
+
+    res.status(200).json({
+      message: `Bio ${bioStatus === 'approved' ? 'approved' : 'flagged'} successfully`,
+      influencer,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update bio status', error: error.message });
+  }
+};
+
+const getAllInfluencers = async (req, res) => {
+  try {
+    const { bioStatus, search } = req.query;
+    const filter = {};
+    if (bioStatus) filter.bioStatus = bioStatus;
+    if (search) filter.$or = [
+      { name:  { $regex: search, $options: 'i' } },
+      { email: { $regex: search, $options: 'i' } },
+    ];
+
+    const influencers = await Influencer.find(filter)
+      .populate('userId', 'name email isActive')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(influencers);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch influencers', error: error.message });
+  }
+};
+
 // ── CAMPAIGNS ──────────────────────────────────────────
 // GET /api/admin/campaigns
 const getAllCampaigns = async (req, res) => {
@@ -296,4 +342,6 @@ module.exports = {
   updateCommission,
   getInfluencerProfile,
   getBrandProfile,
+  updateInfluencerBioStatus,
+  getAllInfluencers,
 };

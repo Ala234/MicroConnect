@@ -18,7 +18,9 @@ const {
   getCommission,
   updateCommission,
   getInfluencerProfile,
-  getBrandProfile
+  getBrandProfile,
+  updateInfluencerBioStatus,
+  getAllInfluencers,
 } = require('../controllers/adminController');
 
 const { protect }   = require('../middleware/authMiddleware');
@@ -58,6 +60,14 @@ router.delete('/policies/:id', deletePolicy);
 // ── COMMISSION ─────────────────────────────────────────
 router.get('/commission', getCommission);
 router.put('/commission', updateCommission);
+
+
+// router.get   ('/content',                getAllContent);
+// router.patch ('/content/:id/approve',    approveContent);
+// router.patch ('/content/:id/flag',       flagContent);
+router.patch('/influencers/:id/bio-status', updateInfluencerBioStatus);
+router.get('/influencers', getAllInfluencers);
+
 
 // ── TODO (no models yet) ───────────────────────────────
 // router.get   ('/contracts',              getAllContracts);
