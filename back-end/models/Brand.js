@@ -29,6 +29,22 @@ const brandSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    location: {
+      type: String,
+      trim: true,
+    },
+    instagram: {
+      type: String,
+      trim: true,
+    },
+    tiktok: {
+      type: String,
+      trim: true,
+    },
+    twitter: {
+      type: String,
+      trim: true,
+    },
   },
   { timestamps: true }
 );
