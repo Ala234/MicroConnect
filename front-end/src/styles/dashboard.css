@@ -2542,3 +2542,70 @@
 .stat-note {
   font-size: 11px;
 }
+
+/* Brand/Influencer Top Nav */
+.influencer-top-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.influencer-nav-link {
+  background: transparent;
+  border: none;
+  color: #b8c2e4;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.influencer-nav-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+}
+
+.influencer-nav-link.active {
+  color: #6d5dfc;
+  background: rgba(109, 93, 252, 0.12);
+}
+
+.brand-name {
+  color: white;
+  font-weight: 800;
+  font-size: 16px;
+  margin: 0;
+}
+
+.brand-subtitle {
+  color: #8fb0ff;
+  font-size: 12px;
+  margin: 0;
+}
+.back-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+  margin-right: 8px;
+  position: relative;
+  z-index: 10;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(-2px);
+}
+
+.back-btn:active {
+  transform: scale(0.95);
+}
