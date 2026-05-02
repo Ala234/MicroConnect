@@ -284,4 +284,5 @@ module.exports = {
   deletePolicy,
   getCommission,
   updateCommission,
+  getInfluencerProfile,
 };
