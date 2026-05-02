@@ -54,6 +54,10 @@ exports.upsertBrandProfile = async (req, res) => {
       website: req.body.website,
       logo: req.body.logo,
       description: req.body.description,
+      location: req.body.location,
+      instagram: req.body.instagram,
+      tiktok: req.body.tiktok,
+      twitter: req.body.twitter,
     };
 
     const brand = await Brand.findOneAndUpdate(

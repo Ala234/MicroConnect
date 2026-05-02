@@ -48,6 +48,10 @@ router.put(
       .optional()
       .isString()
       .withMessage('description must be a string'),
+    body('location').optional().isString().withMessage('location must be a string'),
+    body('instagram').optional().isString().withMessage('instagram must be a string'),
+    body('tiktok').optional().isString().withMessage('tiktok must be a string'),
+    body('twitter').optional().isString().withMessage('twitter must be a string'),
   ],
   upsertBrandProfile
 );

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getReviewsForBrand } from '../../api/reviews';
 import '../../styles/influencer.css';
 
 const platformMeta = [
@@ -39,6 +40,26 @@ const defaultProfile = {
   website: '',
 };
 
+const formatReviewDate = (date) => {
+  if (!date) return 'Not dated';
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) return 'Not dated';
+
+  return parsedDate.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+const getReviewAverage = (reviews) => {
+  if (!reviews.length) return null;
+
+  return (
+    reviews.reduce((total, item) => total + Number(item.rating || 0), 0) / reviews.length
+  ).toFixed(1);
+};
+
 export default function BrandProfile() {
   const navigate = useNavigate();
 
@@ -70,6 +91,9 @@ export default function BrandProfile() {
   const [errors, setErrors] = useState({});
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [brandReviews, setBrandReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState('');
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'brand') {
@@ -81,6 +105,43 @@ export default function BrandProfile() {
       navigate('/brand/setup');
     }
   }, [currentUser, isProfileComplete, navigate]);
+
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'brand') {
+      setBrandReviews([]);
+      return undefined;
+    }
+
+    let ignoreResult = false;
+
+    const loadReviews = async () => {
+      const brandIdentifier = currentUser._id || currentUser.id;
+      if (!brandIdentifier) {
+        setBrandReviews([]);
+        return;
+      }
+
+      setReviewsLoading(true);
+      setReviewsError('');
+      const result = await getReviewsForBrand(brandIdentifier);
+
+      if (!ignoreResult) {
+        if (result.success) {
+          setBrandReviews(result.reviews || []);
+        } else {
+          setBrandReviews([]);
+          setReviewsError(result.message || 'Brand reviews could not be loaded');
+        }
+        setReviewsLoading(false);
+      }
+    };
+
+    loadReviews();
+
+    return () => {
+      ignoreResult = true;
+    };
+  }, [currentUser]);
 
   const validateProfile = () => {
     const newErrors = {};
@@ -175,6 +236,7 @@ export default function BrandProfile() {
   const displayName = profile.companyName || 'Brand Profile';
   const displayLocation = profile.location || emptyText;
   const displayDescription = profile.description || emptyText;
+  const brandReviewAverage = getReviewAverage(brandReviews);
 
   return (
     <main className="influencer-page dashboard-page">
@@ -238,6 +300,16 @@ export default function BrandProfile() {
                   </button>
                   <button className="btn btn-outline" onClick={() => navigate('/brand/contracts')}>
                     Contracts
+                  </button>
+                  <button
+                    className="btn btn-outline"
+                    onClick={() =>
+                      document
+                        .getElementById('brand-feedback-reviews')
+                        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }
+                  >
+                    Feedback & Reviews
                   </button>
                 </div>
               </div>
@@ -373,6 +445,50 @@ export default function BrandProfile() {
                 <p>{profile.description || emptyText}</p>
               )}
               {fieldError('description')}
+            </div>
+
+            <div
+              id="brand-feedback-reviews"
+              className="profile-card"
+              style={{ gridColumn: '1 / -1' }}
+            >
+              <h3>Feedback & Reviews</h3>
+              {reviewsLoading ? (
+                <p>Loading reviews...</p>
+              ) : reviewsError ? (
+                <div className="no-results">
+                  <h3>Brand reviews could not be loaded</h3>
+                  <p>{reviewsError}</p>
+                </div>
+              ) : brandReviews.length > 0 ? (
+                <>
+                  <div className="profile-highlight-pill" style={{ marginBottom: 16 }}>
+                    <span className="profile-highlight-label">Average rating</span>
+                    <span className="profile-highlight-value">{brandReviewAverage}/5</span>
+                  </div>
+                  <div className="history-review-list">
+                    {brandReviews.map((item) => (
+                      <section className="history-review-card" key={item.id || item._id}>
+                        <div className="history-review-header">
+                          <div>
+                            <h4>{item.influencerName || item.reviewerName || 'Influencer'}</h4>
+                            <p>{item.campaignName || 'Campaign'} | {formatReviewDate(item.createdAt)}</p>
+                          </div>
+                          <div className="history-campaign-rating">
+                            <span className="rating-text">{item.rating}/5</span>
+                          </div>
+                        </div>
+                        <p className="review-text">{item.review}</p>
+                      </section>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="no-results">
+                  <h3>No brand reviews yet</h3>
+                  <p>Influencer feedback will appear here after collaborations.</p>
+                </div>
+              )}
             </div>
           </div>
         </section>

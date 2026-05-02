@@ -1,8 +1,9 @@
 import "../../styles/dashboard.css";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiFileText, FiLogOut, FiRefreshCcw } from "react-icons/fi";
 import { getMyContracts } from "../../api/contracts";
+import { createInfluencerReview, getReviewsForContract } from "../../api/reviews";
 
 const getContractKey = (contract) => contract.contractId || contract._id || contract.id;
 
@@ -26,6 +27,14 @@ const statusClass = (status) => {
   }
 };
 
+const canReviewInfluencer = (contract) =>
+  Boolean(
+    getContractKey(contract) &&
+    (getRecordId(contract.influencerId || contract.influencer) ||
+      contract.influencerEmail ||
+      contract.influencerName)
+  );
+
 const formatDate = (date) => {
   if (!date) return "Not set";
   const parsedDate = new Date(date);
@@ -43,6 +52,13 @@ export default function BrandContracts() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [reviewsByContract, setReviewsByContract] = useState({});
+  const [reviewModalContract, setReviewModalContract] = useState(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewError, setReviewError] = useState("");
+  const [reviewNotice, setReviewNotice] = useState("");
+  const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
 
   const contractStats = useMemo(() => ({
     total: contracts.length,
@@ -60,6 +76,27 @@ export default function BrandContracts() {
     }
   }, [navigate]);
 
+  const loadReviewMap = useCallback(async (nextContracts) => {
+    const reviewEntries = await Promise.all(
+      (nextContracts || [])
+        .filter(canReviewInfluencer)
+        .map(async (contract) => {
+          const contractKey = getContractKey(contract);
+          const result = await getReviewsForContract(contractKey);
+          return [contractKey, result.success ? result.review : null];
+        })
+    );
+
+    setReviewsByContract(
+      reviewEntries.reduce((reviews, [contractKey, review]) => {
+        if (review) {
+          reviews[contractKey] = review;
+        }
+        return reviews;
+      }, {})
+    );
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -68,7 +105,9 @@ export default function BrandContracts() {
       if (!isMounted) return;
 
       if (result.success) {
-        setContracts(result.contracts || []);
+        const nextContracts = result.contracts || [];
+        setContracts(nextContracts);
+        await loadReviewMap(nextContracts);
         setErrorMessage("");
       } else {
         setErrorMessage(result.message || "Contracts could not be loaded");
@@ -89,7 +128,7 @@ export default function BrandContracts() {
       isMounted = false;
       window.removeEventListener("focus", handleFocus);
     };
-  }, []);
+  }, [loadReviewMap]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -101,7 +140,9 @@ export default function BrandContracts() {
     setRefreshing(true);
     const result = await getMyContracts();
     if (result.success) {
-      setContracts(result.contracts || []);
+      const nextContracts = result.contracts || [];
+      setContracts(nextContracts);
+      await loadReviewMap(nextContracts);
       setErrorMessage("");
     } else {
       setErrorMessage(result.message || "Contracts could not be loaded");
@@ -124,6 +165,73 @@ export default function BrandContracts() {
     if (influencerId) params.set("influencer", influencerId);
 
     navigate(`/contracts?${params.toString()}`);
+  };
+
+  const openReviewModal = (contract) => {
+    setReviewModalContract(contract);
+    setReviewRating(0);
+    setReviewText("");
+    setReviewError("");
+    setReviewNotice("");
+  };
+
+  const closeReviewModal = () => {
+    if (isReviewSubmitting) return;
+
+    setReviewModalContract(null);
+    setReviewRating(0);
+    setReviewText("");
+    setReviewError("");
+  };
+
+  const submitInfluencerReview = async () => {
+    if (!reviewRating) {
+      setReviewError("Please select a rating from 1 to 5 stars.");
+      return;
+    }
+
+    if (!reviewText.trim()) {
+      setReviewError("Please write your influencer review before submitting.");
+      return;
+    }
+
+    const contractKey = getContractKey(reviewModalContract);
+    setIsReviewSubmitting(true);
+    setReviewError("");
+
+    try {
+      const result = await createInfluencerReview({
+        influencerId: getRecordId(reviewModalContract.influencerId || reviewModalContract.influencer),
+        campaignId: getRecordId(reviewModalContract.campaignId || reviewModalContract.campaign),
+        applicationId: getRecordId(reviewModalContract.application),
+        contractId: contractKey,
+        rating: reviewRating,
+        review: reviewText.trim(),
+      });
+
+      if (result.success) {
+        setReviewsByContract((currentReviews) => ({
+          ...currentReviews,
+          [contractKey]: result.review,
+        }));
+        setReviewNotice("Influencer review submitted.");
+        setReviewModalContract(null);
+        setReviewRating(0);
+        setReviewText("");
+      } else {
+        if (result.review) {
+          setReviewsByContract((currentReviews) => ({
+            ...currentReviews,
+            [contractKey]: result.review,
+          }));
+        }
+        setReviewError(result.message || "Influencer review could not be submitted.");
+      }
+    } catch (err) {
+      setReviewError(err.message || "Influencer review could not be submitted.");
+    } finally {
+      setIsReviewSubmitting(false);
+    }
   };
 
   return (
@@ -161,6 +269,13 @@ export default function BrandContracts() {
             <h1>Contracts</h1>
             <p>Track contract status directly from MongoDB.</p>
           </div>
+
+          {reviewNotice ? (
+            <div className="contract-banner success" style={{ margin: "0 0 18px auto" }}>
+              <strong>Feedback & Reviews</strong>
+              <span>{reviewNotice}</span>
+            </div>
+          ) : null}
 
           <div className="dashboard-stats">
             <div className="dashboard-stat-card">
@@ -231,10 +346,23 @@ export default function BrandContracts() {
                           {contract.status || "Pending"}
                         </td>
                         <td>
-                          <button className="campaign-view-btn" onClick={() => openContract(contract)}>
-                            <FiFileText />
-                            <span>View</span>
-                          </button>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button className="campaign-view-btn" onClick={() => openContract(contract)}>
+                              <FiFileText />
+                              <span>View</span>
+                            </button>
+                            {canReviewInfluencer(contract) && (
+                              reviewsByContract[getContractKey(contract)] ? (
+                                <button className="campaign-view-btn" disabled>
+                                  Influencer reviewed
+                                </button>
+                              ) : (
+                                <button className="campaign-view-btn" onClick={() => openReviewModal(contract)}>
+                                  Review Influencer
+                                </button>
+                              )
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -244,6 +372,91 @@ export default function BrandContracts() {
             )}
           </div>
         </div>
+
+        {reviewModalContract && (
+          <div
+            className="campaign-modal-overlay"
+            onClick={closeReviewModal}
+            style={{ position: "fixed", padding: 20 }}
+          >
+            <div
+              className="campaign-confirm-modal"
+              onClick={(event) => event.stopPropagation()}
+              style={{ textAlign: "left", width: "min(560px, 100%)" }}
+            >
+              <p className="campaign-card-label">Feedback & Reviews</p>
+              <h3>Review {reviewModalContract.influencerName || "Influencer"}</h3>
+              <p>
+                Share feedback about this collaboration for {reviewModalContract.campaignName || "the campaign"}.
+              </p>
+
+              <div style={{ marginTop: 18 }}>
+                <span className="campaign-card-label">Rating</span>
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  {[1, 2, 3, 4, 5].map((ratingValue) => (
+                    <button
+                      key={ratingValue}
+                      type="button"
+                      onClick={() => setReviewRating(ratingValue)}
+                      disabled={isReviewSubmitting}
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 10,
+                        border: reviewRating >= ratingValue ? "1px solid #fbbf24" : "1px solid rgba(255,255,255,0.18)",
+                        background: reviewRating >= ratingValue ? "rgba(251,191,36,0.16)" : "rgba(255,255,255,0.05)",
+                        color: reviewRating >= ratingValue ? "#fbbf24" : "#97adde",
+                        fontSize: 24,
+                        cursor: isReviewSubmitting ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      &#9733;
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="campaign-card-label" htmlFor="influencer-review-text" style={{ display: "block", marginTop: 18 }}>
+                Written feedback
+              </label>
+              <textarea
+                id="influencer-review-text"
+                value={reviewText}
+                onChange={(event) => setReviewText(event.target.value)}
+                rows="6"
+                disabled={isReviewSubmitting}
+                placeholder="Describe communication, content quality, delivery, and reliability."
+                style={{
+                  width: "100%",
+                  marginTop: 8,
+                  padding: "12px 14px",
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  borderRadius: 12,
+                  color: "white",
+                  fontFamily: "inherit",
+                  resize: "vertical",
+                }}
+              />
+
+              {reviewError ? (
+                <div className="contract-banner danger" style={{ maxWidth: "100%", margin: "16px 0 0" }}>
+                  <strong>Review could not be submitted</strong>
+                  <span>{reviewError}</span>
+                </div>
+              ) : null}
+
+              <div className="campaign-confirm-actions" style={{ marginTop: 22 }}>
+                <button className="campaign-confirm-btn cancel" onClick={closeReviewModal} disabled={isReviewSubmitting}>
+                  Cancel
+                </button>
+                <button className="campaign-confirm-btn delete" onClick={submitInfluencerReview} disabled={isReviewSubmitting}>
+                  {isReviewSubmitting ? "Submitting..." : "Submit Review"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

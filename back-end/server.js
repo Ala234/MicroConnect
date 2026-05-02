@@ -2,6 +2,7 @@ require('dotenv').config({ quiet: true });
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 const app = express();
 
@@ -20,7 +21,7 @@ app.use('/api/influencers', require('./routes/influencerRoutes'));
 app.use('/api/campaigns', require('./routes/campaignRoutes'));
 app.use('/api/applications', require('./routes/applicationRoutes'));
 app.use('/api/contracts', require('./routes/contractRoutes'));
-app.use('/api/reviews', require('./routes/brandReviewRoutes'));
+app.use('/api/reviews', reviewRoutes);
 
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 app.use(notFound);
