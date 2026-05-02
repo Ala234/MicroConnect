@@ -1,11 +1,11 @@
 import "../../styles/dashboard.css";
 import { useNavigate } from "react-router-dom";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Sidebar from "./Sidebar";
 
-import SaraBImage from "../../assets/images/SaraBlogs-Profile.jpg";
+import SaraBImage  from "../../assets/images/SaraBlogs-Profile.jpg";
 import AhmedFImage from "../../assets/images/AhmedFit-Profile.jpg";
-import LisaSImage from "../../assets/images/Lisa-Profile.jpg";
+import LisaSImage  from "../../assets/images/Lisa-Profile.jpg";
 
 import {
   LineChart, Line, XAxis, YAxis, Tooltip,
@@ -16,16 +16,48 @@ import {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [collapsed, setCollapsed] = useState(
     localStorage.getItem("sidebar") === "true"
   );
+
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     navigate("/login");
   };
 
+  // ── Stats State ────────────────────────────────────────
+  const [stats, setStats] = useState({
+    totalUsers:        0,
+    totalBrands:       0,
+    totalInfluencers:  0,
+    totalCampaigns:    0,
+    activeCampaigns:   0,
+    totalApplications: 0,
+    flaggedBios:       0,
+  });
+
+  // ── Fetch Stats ────────────────────────────────────────
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res  = await fetch("/api/admin/stats", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+        setStats(data);
+      } catch (err) {
+        console.error("Failed to fetch stats:", err.message);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  // ── Mock Data (replace when models are ready) ──────────
   const earningsData = useMemo(() => [
     { month: "Jan", revenue: 20000, commission: 8000  },
     { month: "Feb", revenue: 30000, commission: 12500 },
@@ -51,10 +83,9 @@ export default function AdminDashboard() {
   ], []);
 
   const campaignStatusData = useMemo(() => [
-    { name: "Active",    value: 42 },
-    { name: "Completed", value: 31 },
-    { name: "Pending",   value: 13 },
-  ], []);
+    { name: "Active",    value: stats.activeCampaigns },
+    { name: "Total",     value: stats.totalCampaigns  },
+  ], [stats]);
 
   const PIE_COLORS = ["#4aa8ff", "#6d5dfc", "#a78bfa"];
 
@@ -115,21 +146,21 @@ export default function AdminDashboard() {
 
             {/* HERO */}
             <div className="dashboard-hero">
-              <h1>Welcome back, {user.name || 'Admin'}</h1>
+              <h1>Welcome back, {user.name || "Admin"}!</h1>
               <p>Monitor platform activity and manage the system</p>
             </div>
 
             {/* STATS */}
             <div className="dashboard-stats">
               <div className="stat-card">
-                <div className="stat-number">1,500</div>
+                <div className="stat-number">{stats.totalUsers.toLocaleString()}</div>
                 <div className="stat-title">Total Users</div>
-                <div className="stat-note">620 Brands · 880 Influencers</div>
+                <div className="stat-note">{stats.totalBrands} Brands · {stats.totalInfluencers} Influencers</div>
               </div>
               <div className="stat-card">
-                <div className="stat-number">86</div>
+                <div className="stat-number">{stats.activeCampaigns}</div>
                 <div className="stat-title">Active Campaigns</div>
-                <div className="stat-note">13 pending · 31 completed</div>
+                <div className="stat-note">{stats.totalCampaigns} total campaigns</div>
               </div>
               <div className="stat-card">
                 <div className="stat-number">11</div>
@@ -142,14 +173,14 @@ export default function AdminDashboard() {
                 <div className="stat-note">Commission: SAR 48K</div>
               </div>
               <div className="stat-card">
-                <div className="stat-number">7</div>
-                <div className="stat-title">Content Flagged</div>
+                <div className="stat-number">{stats.flaggedBios || 0}</div>
+                <div className="stat-title">Bios Flagged</div>
                 <div className="stat-note">Awaiting review</div>
               </div>
               <div className="stat-card">
-                <div className="stat-number">54</div>
-                <div className="stat-title">Active Contracts</div>
-                <div className="stat-note">8 expiring this week</div>
+                <div className="stat-number">{stats.totalApplications}</div>
+                <div className="stat-title">Total Applications</div>
+                <div className="stat-note">Across all campaigns</div>
               </div>
             </div>
 
