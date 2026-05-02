@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
 import { getCampaigns } from '../../data/mockCampaigns';
 import {
   getInfluencerApplications,
@@ -57,11 +58,7 @@ export default function MyApplications() {
           </div>
         </div>
 
-        <nav className="topnav">
-          <button onClick={() => navigate('/influencer')}>Campaigns</button>
-          <button onClick={() => navigate('/influencer/profile')}>Profile</button>
-          <button className="active">Applications</button>
-        </nav>
+        <InfluencerTopNav active="applications" />
 
         <div className="topbar-actions">
           <button className="dashboard-logout" onClick={() => navigate('/login')}>Sign out</button>

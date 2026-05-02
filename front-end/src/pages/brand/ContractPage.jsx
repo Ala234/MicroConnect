@@ -1,5 +1,5 @@
 import "../../styles/dashboard.css";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   FiArrowLeft,
@@ -17,11 +17,13 @@ import homeImage from "../../assets/images/home.png";
 import SaraBImage from "../../assets/images/SaraBlogs-Profile.jpg";
 import LisaSImage from "../../assets/images/Lisa-Profile.jpg";
 import { getCampaignById } from "../../data/mockCampaigns";
+import { sendContractFromBrand, updateContractStatus } from "../../data/contracts";
 import BrandChatModal from "./BrandChatModal";
 
 const contractProfiles = {
   "sarah-johnson": {
     name: "Sarah Johnson",
+    email: "sarah.johnson@email.com",
     imageSrc: SaraBImage,
     company: "FashionForward Inc.",
     compensation: "$500 + Products",
@@ -37,6 +39,7 @@ const contractProfiles = {
   },
   "mia-carter": {
     name: "Mia Carter",
+    email: "mia.carter@email.com",
     imageSrc: LisaSImage,
     company: "FashionForward Inc.",
     compensation: "$650 + Products",
@@ -69,7 +72,7 @@ const statusMeta = {
       "The digital contract was sent to the influencer and is waiting for confirmation.",
   },
   accepted: {
-    badgeLabel: "Confirmed",
+    badgeLabel: "Active",
     badgeClass: "accepted",
     title: "Contract confirmed",
     description:
@@ -134,6 +137,19 @@ export default function ContractPage() {
   const profile = contractProfiles[influencerId] || contractProfiles["sarah-johnson"];
   const contractInfo = statusMeta[contractState] || statusMeta.requested;
 
+  useEffect(() => {
+    if (contractState === "requested") {
+      sendContractFromBrand({
+        campaign,
+        influencer: {
+          id: influencerId,
+          name: profile.name,
+          email: profile.email,
+        },
+      });
+    }
+  }, [campaignId, influencerId, contractState]);
+
   const contractMetrics = useMemo(
     () => [
       {
@@ -179,6 +195,15 @@ export default function ContractPage() {
 
   const handleContractAction = (action) => {
     if (action === "accept") {
+      const savedContract = sendContractFromBrand({
+        campaign,
+        influencer: {
+          id: influencerId,
+          name: profile.name,
+          email: profile.email,
+        },
+      });
+      updateContractStatus(savedContract.contractId, "Active");
       setContractState("accepted");
       setBannerKey("accepted");
       updateSearchState("accepted");
@@ -186,6 +211,15 @@ export default function ContractPage() {
     }
 
     if (action === "reject") {
+      const savedContract = sendContractFromBrand({
+        campaign,
+        influencer: {
+          id: influencerId,
+          name: profile.name,
+          email: profile.email,
+        },
+      });
+      updateContractStatus(savedContract.contractId, "Rejected");
       setContractState("rejected");
       setBannerKey("rejected");
       updateSearchState("rejected");
@@ -193,6 +227,14 @@ export default function ContractPage() {
     }
 
     if (action === "request") {
+      sendContractFromBrand({
+        campaign,
+        influencer: {
+          id: influencerId,
+          name: profile.name,
+          email: profile.email,
+        },
+      });
       setContractState("requested");
       setBannerKey("requested");
       updateSearchState("requested");

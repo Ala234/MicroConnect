@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
 import { getCampaignById } from '../../data/mockCampaigns';
 import { getProfileForUser, isInfluencerProfileComplete } from '../../data/influencerAccounts';
 import '../../styles/influencer.css';
@@ -38,11 +39,7 @@ export default function CampaignDetails() {
               <p className="brand-subtitle">Influencer Portal</p>
             </div>
           </div>
-          <nav className="topnav">
-            <button onClick={() => navigate('/influencer')}>Campaigns</button>
-            <button onClick={() => navigate('/influencer/profile')}>Profile</button>
-            <button onClick={() => navigate('/influencer/applications')}>Applications</button>
-          </nav>
+          <InfluencerTopNav active="campaigns" />
           <div className="topbar-actions">
             <button className="dashboard-logout">Sign out</button>
           </div>
@@ -73,11 +70,7 @@ export default function CampaignDetails() {
           </div>
         </div>
 
-        <nav className="topnav">
-          <button onClick={() => navigate('/influencer')}>Campaigns</button>
-          <button onClick={() => navigate('/influencer/profile')}>Profile</button>
-          <button onClick={() => navigate('/influencer/applications')}>Applications</button>
-        </nav>
+        <InfluencerTopNav active="campaigns" />
 
         <div className="topbar-actions">
           <button className="dashboard-logout" onClick={() => navigate('/login')}>Sign out</button>

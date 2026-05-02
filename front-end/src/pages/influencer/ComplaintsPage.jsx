@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
 import {
   getInfluencerStorageKey,
   getProfileForUser,
@@ -104,11 +105,7 @@ export default function ComplaintsPage() {
             </div>
           </div>
 
-          <nav className="topnav">
-            <button onClick={() => navigate('/influencer')}>Campaigns</button>
-            <button onClick={() => navigate('/influencer/profile')}>Profile</button>
-            <button onClick={() => navigate('/influencer/applications')}>Applications</button>
-          </nav>
+          <InfluencerTopNav active="profile" />
 
           <div className="topbar-actions">
             <button className="dashboard-logout" onClick={() => navigate('/login')}>Sign out</button>

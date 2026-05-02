@@ -6,6 +6,7 @@ import AvailableCampaigns from "./pages/influencer/AvailableCampaigns";
 import InfluencerSetup from "./pages/influencer/InfluencerSetup";
 import InfluencerProfile from "./pages/influencer/InfluencerProfile";
 import MyApplications from "./pages/influencer/MyApplications";
+import ContractsPage from "./pages/influencer/ContractsPage";
 import CampaignDetails from "./pages/influencer/CampaignDetails";
 import ProposalPage from "./pages/influencer/ProposalPage";
 import MessagingPage from "./pages/influencer/MessagingPage";
@@ -40,6 +41,7 @@ function App() {
         <Route path="/influencer/setup" element={<InfluencerSetup />} />
         <Route path="/influencer/profile" element={<InfluencerProfile />} />
         <Route path="/influencer/applications" element={<MyApplications />} />
+        <Route path="/influencer/contracts" element={<ContractsPage />} />
         <Route path="/influencer/history" element={<CampaignHistory />} />
         <Route path="/influencer/disputes" element={<ComplaintsPage />} />
         <Route path="/influencer/complaints" element={<ComplaintsPage />} />

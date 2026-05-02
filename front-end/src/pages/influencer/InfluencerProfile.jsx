@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveCurrentInfluencerProfile } from '../../api/auth';
+import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
 import SocialPlatformIcon from '../../components/influencer/SocialPlatformIcon';
 import {
   getCurrentUser,
@@ -217,11 +218,7 @@ export default function InfluencerProfile() {
           </div>
         </div>
 
-        <nav className="topnav">
-          <button onClick={() => navigate('/influencer')}>Campaigns</button>
-          <button className="active">Profile</button>
-          <button onClick={() => navigate('/influencer/applications')}>Applications</button>
-        </nav>
+        <InfluencerTopNav active="profile" />
 
         <div className="topbar-actions">
           <button className="dashboard-logout" onClick={() => navigate('/login')}>Sign out</button>
