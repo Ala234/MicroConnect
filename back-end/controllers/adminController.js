@@ -105,6 +105,16 @@ const getInfluencerProfile = async (req, res) => {
   }
 };
 
+const getBrandProfile = async (req, res) => {
+  try {
+    const brand = await Brand.findOne({ userId: req.params.id });
+    if (!brand) return res.status(404).json({ message: 'Brand profile not found' });
+    res.status(200).json(brand);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch brand profile', error: error.message });
+  }
+};
+
 // ── CAMPAIGNS ──────────────────────────────────────────
 // GET /api/admin/campaigns
 const getAllCampaigns = async (req, res) => {
@@ -285,4 +295,5 @@ module.exports = {
   getCommission,
   updateCommission,
   getInfluencerProfile,
+  getBrandProfile,
 };
