@@ -3,39 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import { MoreVertical } from "lucide-react";
-import { getAllContracts } from "../../data/contracts";
 
 const CONTRACTS_PER_PAGE = 5;
-
-const defaultPlatformContracts = [
-  { id: "1005578", brand: "NikeArabia", influencer: "SaraBlogs",  campaign: "Ramadan Collection", value: 4200, start: "Jan 10", end: "Feb 10", status: "Completed" },
-  { id: "1063843", brand: "GlowCo",    influencer: "AhmedFit",   campaign: "Summer Glow",        value: 2800, start: "Feb 01", end: "Mar 01", status: "Active"    },
-  { id: "1042217", brand: "LuxBrand",  influencer: "LisaStyle",  campaign: "Eid Special Drop",   value: 6500, start: "Mar 15", end: "Apr 15", status: "Pending"   },
-  { id: "1049999", brand: "TechStore", influencer: "SaraBlogs",  campaign: "Tech Review 2026",   value: 1900, start: "Mar 20", end: "Apr 20", status: "Active"    },
-  { id: "1058888", brand: "FoodHub",   influencer: "AhmedFit",   campaign: "Food Week",          value: 3100, start: "Apr 01", end: "Apr 30", status: "Active"    },
-  { id: "1067777", brand: "NikeArabia",influencer: "LisaStyle",  campaign: "Spring Drop",        value: 5200, start: "Apr 05", end: "May 05", status: "Active"    },
-  { id: "1076666", brand: "GlowCo",    influencer: "SaraBlogs",  campaign: "Glow Up Campaign",   value: 3800, start: "Apr 10", end: "May 10", status: "Rejected"  },
-  { id: "1085555", brand: "LuxBrand",  influencer: "AhmedFit",   campaign: "Luxury Fitness",     value: 7100, start: "Apr 15", end: "May 15", status: "Active"    },
-  { id: "1094444", brand: "TechStore", influencer: "LisaStyle",  campaign: "Gadget Review",      value: 2400, start: "Apr 20", end: "May 20", status: "Pending"   },
-];
-
-const getContractRows = () => [
-  ...defaultPlatformContracts,
-  ...getAllContracts().map((contract) => ({
-    id: contract.contractId,
-    brand: contract.brandName,
-    influencer: contract.influencerName,
-    campaign: contract.campaignName,
-    value: contract.value,
-    start: contract.startDate,
-    end: contract.endDate,
-    status: contract.status,
-    transactionStatus: contract.transactionStatus,
-  })),
-];
-
-const formatContractValue = (value) =>
-  typeof value === "number" ? `SAR ${value.toLocaleString()}` : value || "Not set";
 
 export default function Contracts() {
   const navigate = useNavigate();
@@ -49,14 +18,36 @@ export default function Contracts() {
   };
 
   // ── State ──────────────────────────────────────────────
-  const [contracts, setContracts] = useState(getContractRows);
-
+  const [contracts,     setContracts]    = useState([]);
+  const [loading,       setLoading]      = useState(true);
+  const [error,         setError]        = useState("");
   const [search,        setSearch]       = useState("");
   const [statusFilter,  setStatusFilter] = useState("All");
   const [openMenu,      setOpenMenu]     = useState(null);
   const [page,          setPage]         = useState(1);
 
   const menuRef = useRef(null);
+
+  const headers = {
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  };
+
+  // ── Fetch Contracts ────────────────────────────────────
+  useEffect(() => {
+    const fetchContracts = async () => {
+      try {
+        const res  = await fetch("/api/admin/contracts", { headers });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+        setContracts(data);
+      } catch (err) {
+        setError(err.message || "Failed to load contracts");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContracts();
+  }, []);
 
   // ── Close menu on outside click ────────────────────────
   useEffect(() => {
@@ -70,19 +61,30 @@ export default function Contracts() {
   }, []);
 
   // ── Reset page on filter change ────────────────────────
-  useEffect(() => { setContracts(getContractRows()); }, []);
-
   useEffect(() => { setPage(1); }, [search, statusFilter]);
+
+  // ── Stats (derived from real data) ────────────────────
+  const total     = contracts.length;
+  const active    = contracts.filter((c) => c.status === "accepted").length;
+  const pending   = contracts.filter((c) => c.status === "pending").length;
+  const completed = contracts.filter((c) => c.status === "completed").length;
 
   // ── Filtering ──────────────────────────────────────────
   const filtered = useMemo(() => {
     return contracts.filter((c) => {
+      const brand      = c.brandId?.companyName  || "";
+      const influencer = c.influencerId?.name    || "";
+      const campaign   = c.campaignId?.title     || "";
+
       const matchSearch =
-        c.id.includes(search)                                        ||
-        c.brand.toLowerCase().includes(search.toLowerCase())         ||
-        c.influencer.toLowerCase().includes(search.toLowerCase())    ||
-        c.campaign.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = statusFilter === "All" || c.status === statusFilter;
+        c.contractId?.toLowerCase().includes(search.toLowerCase()) ||
+        brand.toLowerCase().includes(search.toLowerCase())         ||
+        influencer.toLowerCase().includes(search.toLowerCase())    ||
+        campaign.toLowerCase().includes(search.toLowerCase());
+
+      const matchStatus =
+        statusFilter === "All" || c.status === statusFilter;
+
       return matchSearch && matchStatus;
     });
   }, [contracts, search, statusFilter]);
@@ -94,21 +96,24 @@ export default function Contracts() {
     page * CONTRACTS_PER_PAGE
   );
 
-  // ── Stats ──────────────────────────────────────────────
-  const total     = contracts.length;
-  const active    = contracts.filter((c) => c.status === "Active").length;
-  const pending   = contracts.filter((c) => c.status === "Pending").length;
-  const completed = contracts.filter((c) => c.status === "Completed").length;
-
   // ── Helpers ────────────────────────────────────────────
   const statusClass = (status) => {
     switch (status) {
-      case "Active":    return "status-active";
-      case "Completed": return "status-completed";
-      case "Pending":   return "status-pending";
-      case "Rejected":  return "status-deleted";
+      case "accepted":  return "status-accepted";
+      case "completed": return "status-completed";
+      case "pending":   return "status-pending";
+      case "rejected":  return "status-deleted";
+      case "cancelled": return "status-deleted";
+      case "draft":     return "status-suspended";
       default:          return "";
     }
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "—";
+    return new Date(date).toLocaleDateString("en-GB", {
+      day: "numeric", month: "short", year: "numeric",
+    });
   };
 
   return (
@@ -135,141 +140,176 @@ export default function Contracts() {
               <p>Monitor all platform contracts between brands and influencers</p>
             </div>
 
-            {/* STATS */}
-            <div className="dashboard-stats">
-              <div className="stat-card">
-                <div className="stat-number">{total}</div>
-                <div className="stat-title">Total Contracts</div>
-                <div className="stat-note">All time</div>
+            {/* ERROR */}
+            {error && (
+              <div className="confirm-row">
+                <span className="error-text">{error}</span>
               </div>
-              <div className="stat-card">
-                <div className="stat-number">{active}</div>
-                <div className="stat-title">Active</div>
-                <div className="stat-note">Currently running</div>
+            )}
+
+            {loading ? (
+              <div className="txn-summary">
+                <span className="loading-text">Loading contracts...</span>
               </div>
-              <div className="stat-card">
-                <div className="stat-number">{pending}</div>
-                <div className="stat-title">Pending</div>
-                <div className="stat-note">Awaiting action</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-number">{completed}</div>
-                <div className="stat-title">Completed</div>
-                <div className="stat-note">Successfully closed</div>
-              </div>
-            </div>
+            ) : (
+              <>
+                {/* STATS */}
+                <div className="dashboard-stats">
+                  <div className="stat-card">
+                    <div className="stat-number">{total}</div>
+                    <div className="stat-title">Total Contracts</div>
+                    <div className="stat-note">All time</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-number">{active}</div>
+                    <div className="stat-title">Active</div>
+                    <div className="stat-note">Currently running</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-number">{pending}</div>
+                    <div className="stat-title">Pending</div>
+                    <div className="stat-note">Awaiting response</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-number">{completed}</div>
+                    <div className="stat-title">Completed</div>
+                    <div className="stat-note">Successfully closed</div>
+                  </div>
+                </div>
 
-            {/* CONTROLS */}
-            <div className="users-controls">
-              <input
-                className="txn-search"
-                type="text"
-                placeholder="Search by ID, brand, influencer or campaign..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <select
-                className="txn-select"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                {["All", "Active", "Pending", "Completed", "Rejected"].map((s) => (
-                  <option key={s} value={s}>{s === "All" ? "All Statuses" : s}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* COUNT */}
-            <div className="txn-summary">
-              <span>Showing <strong>{filtered.length}</strong> of <strong>{total}</strong> contracts</span>
-            </div>
-
-            {/* TABLE */}
-            <div className="users-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>No.</th>
-                    <th>ID</th>
-                    <th>Brand</th>
-                    <th>Influencer</th>
-                    <th>Campaign</th>
-                    <th>Value</th>
-                    <th>Start</th>
-                    <th>End</th>
-                    <th>Status</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginated.length === 0 ? (
-                    <tr>
-                      <td colSpan={10} style={{ textAlign: "center", padding: "28px", color: "#b8c2e4" }}>
-                        No contracts match your filters.
-                      </td>
-                    </tr>
-                  ) : (
-                    paginated.map((contract, index) => (
-                      <tr key={contract.id}>
-                        <td>{(page - 1) * CONTRACTS_PER_PAGE + index + 1}</td>
-                        <td className="txn-id">#{contract.id}</td>
-                        <td>{contract.brand}</td>
-                        <td>{contract.influencer}</td>
-                        <td>{contract.campaign}</td>
-                        <td className="txn-amount">{formatContractValue(contract.value)}</td>
-                        <td className="txn-date">{contract.start}</td>
-                        <td className="txn-date">{contract.end}</td>
-                        <td className={statusClass(contract.status)}>{contract.status}</td>
-                        <td className="action-cell" ref={openMenu === contract.id ? menuRef : null}>
-                          <button
-                            className="action-btn"
-                            onClick={() => setOpenMenu(openMenu === contract.id ? null : contract.id)}
-                          >
-                            <MoreVertical size={18} />
-                          </button>
-
-                          {openMenu === contract.id && (
-                            <div className="action-menu">
-                              <div onClick={() => {
-                                navigate(`/admin/contracts/${contract.id}`);
-                                // TODO: navigate to real contract detail page
-                              }}>
-                                View Details
-                              </div>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-
-              {/* PAGINATION */}
-              <div className="pagination">
-                <button
-                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                  disabled={page === 1}
-                >
-                  Previous
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <button
-                    key={i + 1}
-                    className={page === i + 1 ? "active" : ""}
-                    onClick={() => setPage(i + 1)}
+                {/* CONTROLS */}
+                <div className="users-controls">
+                  <input
+                    className="txn-search"
+                    type="text"
+                    placeholder="Search by ID, brand, influencer or campaign..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <select
+                    className="txn-select"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
                   >
-                    {i + 1}
-                  </button>
-                ))}
-                <button
-                  onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                  disabled={page === totalPages || totalPages === 0}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
+                    {["All", "draft", "pending", "accepted", "completed", "rejected", "cancelled"].map((s) => (
+                      <option key={s} value={s}>
+                        {s === "All" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* COUNT */}
+                <div className="txn-summary">
+                  <span>
+                    Showing <strong>{filtered.length}</strong> of{" "}
+                    <strong>{total}</strong> contracts
+                  </span>
+                </div>
+
+                {/* TABLE */}
+                <div className="users-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>No.</th>
+                        <th>ID</th>
+                        <th>Brand</th>
+                        <th>Influencer</th>
+                        <th>Campaign</th>
+                        <th>Value</th>
+                        <th>Commission</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginated.length === 0 ? (
+                        <tr>
+                          <td colSpan={12} className="table-empty-cell">
+                            No contracts match your filters.
+                          </td>
+                        </tr>
+                      ) : (
+                        paginated.map((contract, index) => (
+                          <tr key={contract._id}>
+                            <td>{(page - 1) * CONTRACTS_PER_PAGE + index + 1}</td>
+                            <td className="txn-id">{contract.contractId}</td>
+                            <td>{contract.brandId?.companyName  || "—"}</td>
+                            <td>{contract.influencerId?.name    || "—"}</td>
+                            <td>{contract.campaignId?.title     || "—"}</td>
+                            <td className="txn-amount">
+                              SAR {contract.totalAmount?.toLocaleString() || "—"}
+                            </td>
+                            <td className="txn-date">{contract.commissionRate}%</td>
+                            <td className="txn-date">{formatDate(contract.startDate)}</td>
+                            <td className="txn-date">{formatDate(contract.endDate)}</td>
+                            <td className={contract.paymentStatus === "paid" ? "status-resolved" : "status-pending"}>
+                              {contract.paymentStatus === "paid" ? "Paid" : "Unpaid"}
+                            </td>
+                            <td className={statusClass(contract.status)}>
+                              {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
+                            </td>
+                            <td
+                              className="action-cell"
+                              ref={openMenu === contract._id ? menuRef : null}
+                            >
+                              <button
+                                className="action-btn"
+                                onClick={() =>
+                                  setOpenMenu(openMenu === contract._id ? null : contract._id)
+                                }
+                              >
+                                <MoreVertical size={18} />
+                              </button>
+
+                              {openMenu === contract._id && (
+                                <div className="action-menu">
+                                  <div onClick={() => {
+                                    navigate(`/admin/contracts/${contract._id}`);
+                                    setOpenMenu(null);
+                                  }}>
+                                    View Details
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+
+                  {/* PAGINATION */}
+                  <div className="pagination">
+                    <button
+                      onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                      disabled={page === 1}
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => (
+                      <button
+                        key={i + 1}
+                        className={page === i + 1 ? "active" : ""}
+                        onClick={() => setPage(i + 1)}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                      disabled={page === totalPages || totalPages === 0}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
 
           </div>
         </div>
