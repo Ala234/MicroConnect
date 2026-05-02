@@ -15,6 +15,7 @@ export default function UserDetail() {
   const [user,           setUser]           = useState(null);
   const [influencer,     setInfluencer]     = useState(null);
   const [brand,          setBrand]          = useState(null);
+  const [campaigns,      setCampaigns]      = useState([]);
   const [loading,        setLoading]        = useState(true);
   const [error,          setError]          = useState("");
   const [successMsg,     setSuccessMsg]     = useState("");
@@ -58,6 +59,13 @@ export default function UserDetail() {
           if (brandRes.ok) {
             const brandData = await brandRes.json();
             setBrand(brandData);
+
+            // Fetch brand's campaigns using the Brand document _id
+            const campRes = await fetch(`/api/admin/campaigns?brandId=${brandData._id}`, { headers: authHeaders });
+            if (campRes.ok) {
+              const campData = await campRes.json();
+              setCampaigns(campData);
+            }
           }
         }
       } catch (err) {
@@ -103,6 +111,16 @@ export default function UserDetail() {
       setTimeout(() => setSuccessMsg(""), 3000);
     } catch (err) {
       setError(err.message || "Failed to update bio status");
+    }
+  };
+
+  // ── Helpers ────────────────────────────────────────────
+  const campaignStatusClass = (status) => {
+    switch (status) {
+      case "open":   return "status-active";
+      case "closed": return "status-resolved";
+      case "draft":  return "status-pending";
+      default:       return "";
     }
   };
 
@@ -446,6 +464,65 @@ export default function UserDetail() {
 
                   </div>
                 </div>
+
+                {/* BRAND CAMPAIGNS */}
+                {brand && (
+                  <div className="dashboard-section">
+                    <div className="dashboard-section-header">
+                      <div>
+                        <h2>Campaigns</h2>
+                        <p>
+                          {campaigns.length > 0
+                            ? `${campaigns.length} campaign${campaigns.length > 1 ? "s" : ""} by ${brand.companyName}`
+                            : `No campaigns yet by ${brand.companyName}`
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    {campaigns.length === 0 ? (
+                      <p className="loading-text">No campaigns found for this brand.</p>
+                    ) : (
+                      <div className="users-table">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>No.</th>
+                              <th>Title</th>
+                              <th>Budget</th>
+                              <th>Niche</th>
+                              <th>Deadline</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {campaigns.map((c, index) => (
+                              <tr key={c._id}>
+                                <td>{index + 1}</td>
+                                <td>{c.title}</td>
+                                <td className="txn-amount">
+                                  SAR {c.budget?.toLocaleString() || "—"}
+                                </td>
+                                <td className="txn-date">{c.targetNiche || "—"}</td>
+                                <td className="txn-date">
+                                  {c.deadline
+                                    ? new Date(c.deadline).toLocaleDateString("en-GB", {
+                                        day: "numeric", month: "short", year: "numeric",
+                                      })
+                                    : "—"
+                                  }
+                                </td>
+                                <td className={campaignStatusClass(c.status)}>
+                                  {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
 
               </>
             )}
