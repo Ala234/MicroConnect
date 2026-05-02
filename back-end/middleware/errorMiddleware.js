@@ -7,7 +7,21 @@ const notFound = (req, res, next) => {
 
 // ── Global Error Handler ───────────────────────────────
 const errorHandler = (err, req, res, next) => {
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  const statusCode = err.status || err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
+
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      message: 'Profile image payload is too large. Choose a smaller image and try again.',
+      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+    });
+  }
+
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({
+      message: 'Invalid JSON request body',
+      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+    });
+  }
 
   // Bad MongoDB ObjectId
   if (err.name === 'CastError' && err.kind === 'ObjectId') {
