@@ -1,5 +1,5 @@
 import "../../styles/dashboard.css";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import {
@@ -19,6 +19,9 @@ export default function UserDetail() {
   const [error,          setError]          = useState("");
   const [confirmSuspend, setConfirmSuspend] = useState(false);
   const [successMsg,     setSuccessMsg]     = useState("");
+  const [searchParams] = useSearchParams();
+  const from = searchParams.get("from");
+
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -103,8 +106,8 @@ export default function UserDetail() {
             <div className="campaign-review-empty">
               <h1 style={{ color: "white" }}>User Not Found</h1>
               <p style={{ color: "#b8c2e4" }}>{error || "This user does not exist."}</p>
-              <button className="dashboard-primary-btn" onClick={() => navigate("/ManageUsers")}>
-                Back to Manage Users
+              <button className="dashboard-primary-btn" onClick={() => navigate(from === "content-review" ? "/ContentReview" : "/ManageUsers")}>
+                <ArrowLeft size={16} /> {from === "content-review" ? "Back to Content Review" : "Back to Users"}
               </button>
             </div>
           </div>
@@ -125,8 +128,8 @@ export default function UserDetail() {
           </div>
           <div className="dashboard-topbar-actions">
             <div className="profile-actions">
-              <button className="dashboard-primary-btn" onClick={() => navigate("/ManageUsers")}>
-                <ArrowLeft size={16} /> Back to Users
+              <button className="dashboard-primary-btn" onClick={() => navigate(from === "content-review" ? "/ContentReview" : "/ManageUsers")}>
+                <ArrowLeft size={16} /> {from === "content-review" ? "Back to Content Review" : "Back to Users"}
               </button>
               <button
                 className={`campaign-status-btn ${user.isActive ? "decline" : "accept"}`}

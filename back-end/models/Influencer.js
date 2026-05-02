@@ -147,6 +147,11 @@ const influencerSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    bioStatus: {
+      type: String,
+      enum: ['approved', 'flagged'],
+      default: 'approved',
+    },
   },
   { timestamps: true }
 );
