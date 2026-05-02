@@ -20,26 +20,55 @@ const withImage = (campaign) => ({
   imageSrc: campaign.imageSrc || createPlaceholderImage(campaign.name),
 });
 
+const isInfluencerVisibleCampaign = (campaign = {}) =>
+  String(campaign.status || "active").toLowerCase() === "active";
+
+const getCampaignList = (result) => {
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  if (Array.isArray(result?.campaigns)) {
+    return result.campaigns;
+  }
+
+  if (Array.isArray(result?.data)) {
+    return result.data;
+  }
+
+  return [];
+};
+
+const getCampaignRecord = (result) => result?.campaign || result?.data || null;
+
 // In-memory cache
 let cachedCampaigns = [];
 
 // Async: fetch all campaigns from backend
 export const fetchCampaigns = async () => {
   const result = await apiGetAllCampaigns();
-  if (result.success) {
-    cachedCampaigns = result.campaigns.map(withImage);
+  const campaigns = getCampaignList(result);
+
+  if (result.success || campaigns.length || Array.isArray(result?.campaigns) || Array.isArray(result?.data)) {
+    cachedCampaigns = campaigns
+      .filter(isInfluencerVisibleCampaign)
+      .map(withImage);
     return cachedCampaigns;
   }
+
   return [];
 };
 
 // Async: fetch my campaigns (for brands)
 export const fetchMyCampaigns = async () => {
   const result = await apiGetMyCampaigns();
-  if (result.success) {
-    cachedCampaigns = result.campaigns.map(withImage);
+  const campaigns = getCampaignList(result);
+
+  if (result.success || campaigns.length || Array.isArray(result?.campaigns) || Array.isArray(result?.data)) {
+    cachedCampaigns = campaigns.map(withImage);
     return cachedCampaigns;
   }
+
   return [];
 };
 
@@ -49,9 +78,12 @@ export const getCampaigns = () => cachedCampaigns;
 // Async: get campaign by id from backend
 export const fetchCampaignById = async (campaignId) => {
   const result = await apiGetCampaignById(campaignId);
-  if (result.success) {
-    return withImage(result.campaign);
+  const campaign = getCampaignRecord(result);
+
+  if (result.success || campaign) {
+    return campaign ? withImage(campaign) : null;
   }
+
   return null;
 };
 
@@ -83,9 +115,12 @@ export const saveCampaign = async (campaign) => {
     result = await apiCreateCampaign(dataToSend);
   }
 
-  if (result.success) {
-    return withImage(result.campaign);
+  const savedCampaign = getCampaignRecord(result);
+
+  if (result.success || savedCampaign) {
+    return withImage(savedCampaign);
   }
+
   throw new Error(result.message || "Failed to save campaign");
 };
 
