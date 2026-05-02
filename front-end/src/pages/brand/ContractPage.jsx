@@ -1,5 +1,5 @@
 import "../../styles/dashboard.css";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   FiCalendar,
@@ -104,6 +104,7 @@ export default function ContractPage() {
   const [customTerms, setCustomTerms] = useState([""]);
   const [paymentTiming, setPaymentTiming] = useState("before");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isRefreshingContract, setIsRefreshingContract] = useState(false);
 
   const normalizedContractState = normalizeContractState(contractState);
   const isDraft = normalizedContractState === "draft";
@@ -111,6 +112,66 @@ export default function ContractPage() {
   const totalAmount = parseFloat(String(contractValue).replace(/[^0-9.]/g, "")) || 0;
   const adminCut = (totalAmount * COMMISSION_RATE) / 100;
   const influencerCut = totalAmount - adminCut;
+
+  const applyContractToState = useCallback((contract, fallbackContractId) => {
+    const contractCampaign =
+      contract.campaign && typeof contract.campaign === "object"
+        ? contract.campaign
+        : contract.campaignId && typeof contract.campaignId === "object"
+          ? contract.campaignId
+          : null;
+
+    setApplication(contract.application || null);
+    setCampaign(contractCampaign || { name: contract.campaignName || "Campaign" });
+    setProfile({
+      name: contract.influencerName || "Influencer",
+      email: contract.influencerEmail || "",
+      imageSrc: contract.influencerImage || "",
+    });
+    setContractId(contract.contractId || contract._id || fallbackContractId);
+    setContractState(normalizeContractState(contract.status));
+    setContractValue(contract.value || (contract.totalAmount ? String(contract.totalAmount) : ""));
+    setDuration(contract.duration || "");
+    setStartDate(toInputDate(contract.startDate));
+    setEndDate(toInputDate(contract.endDate));
+    setDeliverables(
+      Array.isArray(contract.deliverables) && contract.deliverables.length
+        ? contract.deliverables
+        : [""]
+    );
+    setCustomTerms(
+      Array.isArray(contract.terms) && contract.terms.length
+        ? contract.terms
+        : splitContractDetails(contract.details).length
+          ? splitContractDetails(contract.details)
+          : [""]
+    );
+    setPaymentTiming(contract.paymentTiming || "before");
+  }, []);
+
+  const refreshContractStatus = useCallback(async ({ showLoading = false } = {}) => {
+    if (!existingContractId || existingContractId === "Assigned after send") {
+      return null;
+    }
+
+    if (showLoading) {
+      setIsRefreshingContract(true);
+    }
+
+    const contractResult = await getContractById(existingContractId);
+    if (contractResult.success && contractResult.contract) {
+      applyContractToState(contractResult.contract, existingContractId);
+      setErrorMessage("");
+    } else {
+      setErrorMessage(contractResult.message || "Contract could not be loaded");
+    }
+
+    if (showLoading) {
+      setIsRefreshingContract(false);
+    }
+
+    return contractResult.contract || null;
+  }, [applyContractToState, existingContractId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -123,41 +184,8 @@ export default function ContractPage() {
             throw new Error(contractResult.message || "Contract could not be loaded");
           }
 
-          const contract = contractResult.contract;
-          const contractCampaign =
-            contract.campaign && typeof contract.campaign === "object"
-              ? contract.campaign
-              : contract.campaignId && typeof contract.campaignId === "object"
-                ? contract.campaignId
-                : null;
-
           if (isMounted) {
-            setApplication(contract.application || null);
-            setCampaign(contractCampaign || { name: contract.campaignName || "Campaign" });
-            setProfile({
-              name: contract.influencerName || "Influencer",
-              email: contract.influencerEmail || "",
-              imageSrc: contract.influencerImage || "",
-            });
-            setContractId(contract.contractId || contract._id || existingContractId);
-            setContractState(normalizeContractState(contract.status));
-            setContractValue(contract.value || (contract.totalAmount ? String(contract.totalAmount) : ""));
-            setDuration(contract.duration || "");
-            setStartDate(toInputDate(contract.startDate));
-            setEndDate(toInputDate(contract.endDate));
-            setDeliverables(
-              Array.isArray(contract.deliverables) && contract.deliverables.length
-                ? contract.deliverables
-                : [""]
-            );
-            setCustomTerms(
-              Array.isArray(contract.terms) && contract.terms.length
-                ? contract.terms
-                : splitContractDetails(contract.details).length
-                  ? splitContractDetails(contract.details)
-                  : [""]
-            );
-            setPaymentTiming(contract.paymentTiming || "before");
+            applyContractToState(contractResult.contract, existingContractId);
           }
           return;
         }
@@ -212,10 +240,19 @@ export default function ContractPage() {
 
     loadContractContext();
 
+    const handleFocus = () => {
+      if (existingContractId && existingContractId !== "Assigned after send") {
+        refreshContractStatus();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("focus", handleFocus);
     };
-  }, [applicationId, campaignId, existingContractId, influencerNameParam, influencerEmailParam]);
+  }, [applicationId, campaignId, existingContractId, influencerNameParam, influencerEmailParam, applyContractToState, refreshContractStatus]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -634,9 +671,14 @@ export default function ContractPage() {
               </button>
 
               {!isDraft ? (
-                <button className="contract-secondary-btn" onClick={handleDownload}>
-                  <FiDownload /><span>Download contract</span>
-                </button>
+                <>
+                  <button className="contract-secondary-btn" onClick={() => refreshContractStatus({ showLoading: true })}>
+                    <FiClock /><span>{isRefreshingContract ? "Refreshing..." : "Refresh status"}</span>
+                  </button>
+                  <button className="contract-secondary-btn" onClick={handleDownload}>
+                    <FiDownload /><span>Download contract</span>
+                  </button>
+                </>
               ) : (
                 <button className="dashboard-primary-btn request-contract-btn" onClick={handleRequestContract}>
                   <FiSend /><span>Request contract</span>

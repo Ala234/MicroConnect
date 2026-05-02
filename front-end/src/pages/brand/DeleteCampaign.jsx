@@ -15,9 +15,29 @@ import {
 } from "react-icons/fi";
 import { deleteCampaignById, fetchCampaignById } from "../../data/mockCampaigns";
 import { getApplicationsForCampaign, updateApplicationStatus } from "../../api/applications";
+import { createContract } from "../../api/contracts";
 import BrandChatModal from "./BrandChatModal";
 
 const getNumericValue = (value) => Number.parseFloat(String(value).replace(/[^0-9.]/g, "")) || 0;
+
+const normalizeApplicationStatus = (status) => {
+  const value = String(status || "").trim().toLowerCase();
+  if (value === "accepted") return "accepted";
+  if (value === "rejected") return "rejected";
+  return "pending";
+};
+
+const normalizeApplications = (items) =>
+  (items || []).map((application) => ({
+    ...application,
+    status: normalizeApplicationStatus(application.status),
+  }));
+
+const getRecordId = (record) => {
+  if (!record) return "";
+  if (typeof record === "object") return record._id || record.id || "";
+  return record;
+};
 
 const getDurationLabel = (startDate, endDate) => {
   if (!startDate || !endDate) return "Not set";
@@ -47,11 +67,11 @@ export default function DeleteCampaign() {
   const [minEngagement, setMinEngagement] = useState("");
   const [minAge, setMinAge] = useState("");
   const [maxAge, setMaxAge] = useState("");
+  const isMissingCampaignId = !campaignId;
 
   useEffect(() => {
-    if (!campaignId) {
-      setStatus("missing");
-      return;
+    if (isMissingCampaignId) {
+      return undefined;
     }
 
     const loadData = async () => {
@@ -65,7 +85,7 @@ export default function DeleteCampaign() {
 
         const result = await getApplicationsForCampaign(campaignId);
         if (result.success) {
-          setApplications(result.applications || []);
+          setApplications(normalizeApplications(result.applications));
         }
 
         setStatus("ready");
@@ -76,7 +96,7 @@ export default function DeleteCampaign() {
     };
 
     loadData();
-  }, [campaignId]);
+  }, [campaignId, isMissingCampaignId]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -88,29 +108,78 @@ export default function DeleteCampaign() {
 
   const handleApplicantAction = async (application, nextStatus) => {
     if (nextStatus === "accepted") {
-      const result = await updateApplicationStatus(application._id, "accepted");
-      if (result.success) {
+      const result = await updateApplicationStatus(application._id, "Accepted");
+      if (!result.success) {
+        showBanner("Application update failed", result.message || "Could not accept this application");
+        return;
+      }
+
+      const updatedApplication = {
+        ...application,
+        ...(result.application || {}),
+        status: normalizeApplicationStatus(result.application?.status || "accepted"),
+      };
+      setApplications((current) =>
+        current.map((item) =>
+          item._id === application._id ? updatedApplication : item
+        )
+      );
+
+      const contractResult = await createContract({
+        applicationId: updatedApplication._id,
+        campaignId,
+        influencerId: getRecordId(updatedApplication.influencerId || updatedApplication.influencer),
+        value: campaign?.budget ? `SAR ${campaign.budget}` : "",
+        totalAmount: getNumericValue(campaign?.budget),
+        startDate: campaign?.startDate,
+        endDate: campaign?.endDate,
+        duration: getDurationLabel(campaign?.startDate, campaign?.endDate),
+        details: "Contract generated after the brand accepted this application.",
+        deliverables: [campaign?.contentType, ...(campaign?.platforms || [])].filter(Boolean),
+        terms: ["Contract terms will be managed by the brand and influencer."],
+        paymentTiming: "before",
+        transactionStatus: "Pending",
+      });
+
+      if (contractResult.success || contractResult.contract) {
+        const contract = contractResult.contract;
+        const nextParams = new URLSearchParams({
+          campaignId,
+          influencer: getRecordId(updatedApplication.influencerId || updatedApplication.influencer),
+          applicationId: updatedApplication._id,
+          state: contract?.status || "Pending",
+        });
+        if (contract?.contractId || contract?._id || contract?.id) {
+          nextParams.set("contractId", contract.contractId || contract._id || contract.id);
+        }
         navigate(
-          `/contracts?campaignId=${campaignId}&influencer=${application.influencerId}&applicationId=${application._id}&state=draft`
+          `/contracts?${nextParams.toString()}`
         );
       } else {
-        showBanner("Application update failed", result.message || "Could not accept this application");
+        showBanner("Application accepted", contractResult.message || "Accepted, but the contract could not be generated");
       }
       return;
     }
 
     if (nextStatus === "rejected") {
-      const result = await updateApplicationStatus(application._id, "rejected");
+      const result = await updateApplicationStatus(application._id, "Rejected");
       if (result.success) {
+        const updatedApplication = {
+          ...application,
+          ...(result.application || {}),
+          status: normalizeApplicationStatus(result.application?.status || "rejected"),
+        };
         setApplications((current) =>
           current.map((item) =>
-            item._id === application._id ? { ...item, status: "rejected" } : item
+            item._id === application._id ? updatedApplication : item
           )
         );
         showBanner(
           "Application rejected!",
           `${application.influencerName} has been notified of your decision`
         );
+      } else {
+        showBanner("Application update failed", result.message || "Could not reject this application");
       }
     }
   };
@@ -137,7 +206,7 @@ export default function DeleteCampaign() {
     setMaxAge("");
   };
 
-  if (status === "missing") {
+  if (status === "missing" || isMissingCampaignId) {
     return (
       <div className="dashboard-page campaign-review-page">
         <div className="dashboard-shell">

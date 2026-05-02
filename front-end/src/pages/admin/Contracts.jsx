@@ -28,14 +28,13 @@ export default function Contracts() {
 
   const menuRef = useRef(null);
 
-  const headers = {
-    Authorization: `Bearer ${localStorage.getItem("token")}`,
-  };
-
   // ── Fetch Contracts ────────────────────────────────────
   useEffect(() => {
     const fetchContracts = async () => {
       try {
+        const headers = {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        };
         const res  = await fetch("/api/admin/contracts", { headers });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);

@@ -80,9 +80,12 @@ export const getMyApplications = async () =>
     headers: { Authorization: `Bearer ${getToken()}` },
   });
 
-export const updateApplicationStatus = async (applicationId, status, brandResponse = "") =>
-  request(`${API_URL}/${applicationId}/status`, {
+export const updateApplication = async (applicationId, applicationData) =>
+  request(`${API_URL}/${applicationId}`, {
     method: "PUT",
     headers: authHeaders(),
-    body: JSON.stringify({ status, brandResponse }),
+    body: JSON.stringify(applicationData),
   });
+
+export const updateApplicationStatus = async (applicationId, status, brandResponse = "") =>
+  updateApplication(applicationId, { status, brandResponse });
