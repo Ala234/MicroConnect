@@ -3,8 +3,39 @@ import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import { MoreVertical } from "lucide-react";
+import { getAllContracts } from "../../data/contracts";
 
 const CONTRACTS_PER_PAGE = 5;
+
+const defaultPlatformContracts = [
+  { id: "1005578", brand: "NikeArabia", influencer: "SaraBlogs",  campaign: "Ramadan Collection", value: 4200, start: "Jan 10", end: "Feb 10", status: "Completed" },
+  { id: "1063843", brand: "GlowCo",    influencer: "AhmedFit",   campaign: "Summer Glow",        value: 2800, start: "Feb 01", end: "Mar 01", status: "Active"    },
+  { id: "1042217", brand: "LuxBrand",  influencer: "LisaStyle",  campaign: "Eid Special Drop",   value: 6500, start: "Mar 15", end: "Apr 15", status: "Pending"   },
+  { id: "1049999", brand: "TechStore", influencer: "SaraBlogs",  campaign: "Tech Review 2026",   value: 1900, start: "Mar 20", end: "Apr 20", status: "Active"    },
+  { id: "1058888", brand: "FoodHub",   influencer: "AhmedFit",   campaign: "Food Week",          value: 3100, start: "Apr 01", end: "Apr 30", status: "Active"    },
+  { id: "1067777", brand: "NikeArabia",influencer: "LisaStyle",  campaign: "Spring Drop",        value: 5200, start: "Apr 05", end: "May 05", status: "Active"    },
+  { id: "1076666", brand: "GlowCo",    influencer: "SaraBlogs",  campaign: "Glow Up Campaign",   value: 3800, start: "Apr 10", end: "May 10", status: "Rejected"  },
+  { id: "1085555", brand: "LuxBrand",  influencer: "AhmedFit",   campaign: "Luxury Fitness",     value: 7100, start: "Apr 15", end: "May 15", status: "Active"    },
+  { id: "1094444", brand: "TechStore", influencer: "LisaStyle",  campaign: "Gadget Review",      value: 2400, start: "Apr 20", end: "May 20", status: "Pending"   },
+];
+
+const getContractRows = () => [
+  ...defaultPlatformContracts,
+  ...getAllContracts().map((contract) => ({
+    id: contract.contractId,
+    brand: contract.brandName,
+    influencer: contract.influencerName,
+    campaign: contract.campaignName,
+    value: contract.value,
+    start: contract.startDate,
+    end: contract.endDate,
+    status: contract.status,
+    transactionStatus: contract.transactionStatus,
+  })),
+];
+
+const formatContractValue = (value) =>
+  typeof value === "number" ? `SAR ${value.toLocaleString()}` : value || "Not set";
 
 export default function Contracts() {
   const navigate = useNavigate();
@@ -18,17 +49,7 @@ export default function Contracts() {
   };
 
   // ── State ──────────────────────────────────────────────
-  const [contracts, setContracts] = useState([
-    { id: "1005578", brand: "NikeArabia", influencer: "SaraBlogs",  campaign: "Ramadan Collection", value: 4200, start: "Jan 10", end: "Feb 10", status: "Completed" },
-    { id: "1063843", brand: "GlowCo",    influencer: "AhmedFit",   campaign: "Summer Glow",        value: 2800, start: "Feb 01", end: "Mar 01", status: "Active"    },
-    { id: "1042217", brand: "LuxBrand",  influencer: "LisaStyle",  campaign: "Eid Special Drop",   value: 6500, start: "Mar 15", end: "Apr 15", status: "Pending"   },
-    { id: "1049999", brand: "TechStore", influencer: "SaraBlogs",  campaign: "Tech Review 2026",   value: 1900, start: "Mar 20", end: "Apr 20", status: "Active"    },
-    { id: "1058888", brand: "FoodHub",   influencer: "AhmedFit",   campaign: "Food Week",          value: 3100, start: "Apr 01", end: "Apr 30", status: "Accepted"  },
-    { id: "1067777", brand: "NikeArabia",influencer: "LisaStyle",  campaign: "Spring Drop",        value: 5200, start: "Apr 05", end: "May 05", status: "Active"    },
-    { id: "1076666", brand: "GlowCo",    influencer: "SaraBlogs",  campaign: "Glow Up Campaign",   value: 3800, start: "Apr 10", end: "May 10", status: "Rejected"  },
-    { id: "1085555", brand: "LuxBrand",  influencer: "AhmedFit",   campaign: "Luxury Fitness",     value: 7100, start: "Apr 15", end: "May 15", status: "Active"    },
-    { id: "1094444", brand: "TechStore", influencer: "LisaStyle",  campaign: "Gadget Review",      value: 2400, start: "Apr 20", end: "May 20", status: "Pending"   },
-  ]);
+  const [contracts, setContracts] = useState(getContractRows);
 
   const [search,        setSearch]       = useState("");
   const [statusFilter,  setStatusFilter] = useState("All");
@@ -49,6 +70,8 @@ export default function Contracts() {
   }, []);
 
   // ── Reset page on filter change ────────────────────────
+  useEffect(() => { setContracts(getContractRows()); }, []);
+
   useEffect(() => { setPage(1); }, [search, statusFilter]);
 
   // ── Filtering ──────────────────────────────────────────
@@ -83,7 +106,6 @@ export default function Contracts() {
       case "Active":    return "status-active";
       case "Completed": return "status-completed";
       case "Pending":   return "status-pending";
-      case "Accepted":  return "status-accepted";
       case "Rejected":  return "status-deleted";
       default:          return "";
     }
@@ -151,7 +173,7 @@ export default function Contracts() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                {["All", "Active", "Pending", "Accepted", "Completed", "Rejected"].map((s) => (
+                {["All", "Active", "Pending", "Completed", "Rejected"].map((s) => (
                   <option key={s} value={s}>{s === "All" ? "All Statuses" : s}</option>
                 ))}
               </select>
@@ -194,7 +216,7 @@ export default function Contracts() {
                         <td>{contract.brand}</td>
                         <td>{contract.influencer}</td>
                         <td>{contract.campaign}</td>
-                        <td className="txn-amount">SAR {contract.value.toLocaleString()}</td>
+                        <td className="txn-amount">{formatContractValue(contract.value)}</td>
                         <td className="txn-date">{contract.start}</td>
                         <td className="txn-date">{contract.end}</td>
                         <td className={statusClass(contract.status)}>{contract.status}</td>

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
 import { getCampaigns } from '../../data/mockCampaigns';
 import { getProfileForUser, isInfluencerProfileComplete } from '../../data/influencerAccounts';
 import '../../styles/influencer.css';
@@ -106,11 +107,7 @@ export default function AvailableCampaigns() {
           </div>
         </div>
 
-        <nav className="topnav">
-          <button className="active">Campaigns</button>
-          <button onClick={() => navigate('/influencer/profile')}>Profile</button>
-          <button onClick={() => navigate('/influencer/applications')}>Applications</button>
-        </nav>
+        <InfluencerTopNav active="campaigns" />
 
         <div className="topbar-actions">
           <button className="dashboard-logout" onClick={() => navigate('/login')}>Sign out</button>

@@ -131,7 +131,7 @@ export default function DeleteCampaign() {
 
     if (nextStatus === "accepted") {
       navigate(
-        `/contracts?campaignId=${campaignId}&influencer=${applicant.id}&state=accepted`
+        `/contracts?campaignId=${campaignId}&influencer=${applicant.id}&state=requested`
       );
       return;
     }
