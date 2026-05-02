@@ -19,6 +19,7 @@ export default function CreateCampaign() {
   const [targetAudience, setTargetAudience] = useState("");
   const [contentType, setContentType] = useState("");
   const [platforms, setPlatforms] = useState([]);
+  const [campaignImage, setCampaignImage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
@@ -33,6 +34,7 @@ export default function CreateCampaign() {
       setTargetAudience("");
       setContentType("");
       setPlatforms([]);
+      setCampaignImage("");
       setErrorMessage("");
       return;
     }
@@ -55,6 +57,7 @@ export default function CreateCampaign() {
     setTargetAudience(campaign.targetAudience);
     setContentType(campaign.contentType);
     setPlatforms(campaign.platforms);
+    setCampaignImage(campaign.imageSrc || "");
   }, [campaignId]);
 
   const togglePlatform = (platform) => {
@@ -63,6 +66,27 @@ export default function CreateCampaign() {
         ? prev.filter((item) => item !== platform)
         : [...prev, platform]
     );
+  };
+
+  const handleImageUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage("Image size must be less than 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCampaignImage(reader.result || "");
+      setErrorMessage("");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setCampaignImage("");
   };
 
   const handleCreateCampaign = () => {
@@ -100,6 +124,7 @@ export default function CreateCampaign() {
       contentType,
       platforms,
       imageKey: "spring",
+      imageSrc: campaignImage,
     });
 
     if (campaignId) {
@@ -115,6 +140,14 @@ export default function CreateCampaign() {
       <div className="dashboard-shell">
         <div className="dashboard-topbar">
           <div className="dashboard-logo">
+            <button
+              className="back-btn"
+              onClick={() => navigate(-1)}
+              aria-label="Back"
+              type="button"
+            >
+              ←
+            </button>
             <div className="dashboard-logo-icon">M</div>
             <span>MicroConnect</span>
           </div>
@@ -141,6 +174,37 @@ export default function CreateCampaign() {
           ) : null}
 
           <div className="campaign-form-grid">
+            {/* Campaign Image Upload */}
+            <div className="campaign-form-group full-width">
+              <label>Campaign Image</label>
+              <div className="campaign-image-upload">
+                {campaignImage ? (
+                  <div className="campaign-image-preview">
+                    <img src={campaignImage} alt="Campaign preview" />
+                    <button
+                      type="button"
+                      className="campaign-image-remove"
+                      onClick={handleRemoveImage}
+                    >
+                      ✕ Remove
+                    </button>
+                  </div>
+                ) : (
+                  <label className="campaign-image-dropzone">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      style={{ display: "none" }}
+                    />
+                    <div className="upload-icon">📷</div>
+                    <p>Click to upload campaign image</p>
+                    <span>PNG, JPG up to 5MB</span>
+                  </label>
+                )}
+              </div>
+            </div>
+
             <div className="campaign-form-group full-width">
               <label>Campaign Name</label>
               <input
@@ -205,7 +269,7 @@ export default function CreateCampaign() {
                 type="number"
                 placeholder="Enter their number"
                 value={influencersCount}
- onChange={(e) => setInfluencersCount(e.target.value)}
+                onChange={(e) => setInfluencersCount(e.target.value)}
               />
             </div>
 
