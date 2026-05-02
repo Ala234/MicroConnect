@@ -1,5 +1,6 @@
 import saraProfileImage from '../assets/images/SaraBlogs-Profile.jpg';
 import miaProfileImage from '../assets/images/Lisa-Profile.jpg';
+import jasonProfileImage from '../assets/images/AhmedFit-Profile.jpg';
 
 const PROFILE_STORAGE_KEY = 'influencerProfilesByEmail';
 const ACCOUNT_STORAGE_KEY = 'influencerAccounts';
@@ -39,6 +40,8 @@ export const existingInfluencerProfiles = {
     },
     profileImage: saraProfileImage,
     status: 'active',
+    bioState: 'Approved',
+    bioStatus: 'approved',
     isProfileComplete: true,
   },
   mia: {
@@ -66,6 +69,37 @@ export const existingInfluencerProfiles = {
     },
     profileImage: miaProfileImage,
     status: 'active',
+    bioState: 'Approved',
+    bioStatus: 'approved',
+    isProfileComplete: true,
+  },
+  jason: {
+    id: 'jason',
+    name: 'Jason Lee',
+    email: 'jason.creator@email.com',
+    bio: 'Fitness and tech lifestyle creator producing practical product reviews, short-form tutorials, and energetic campaign content.',
+    location: 'Riyadh, Saudi Arabia',
+    website: 'https://jasoncreator.com',
+    instagram: '@jasoncreator',
+    tiktok: '@jasoncreator',
+    youtube: 'Jason Creator',
+    followers: '48.6K',
+    engagement: '4.8%',
+    categories: ['Fitness', 'Tech', 'Lifestyle'],
+    rates: {
+      post: '$750-1100',
+      story: '$250-450',
+      video: '$1300-2200',
+    },
+    audience: {
+      age: '18-34',
+      gender: 'Mixed',
+      location: 'Saudi Arabia, UAE, UK',
+    },
+    profileImage: jasonProfileImage,
+    status: 'active',
+    bioState: 'Approved',
+    bioStatus: 'approved',
     isProfileComplete: true,
   },
 };
@@ -82,6 +116,13 @@ const mockInfluencerAccounts = [
     id: 'mia',
     name: existingInfluencerProfiles.mia.name,
     email: existingInfluencerProfiles.mia.email,
+    password: 'password123',
+    role: 'influencer',
+  },
+  {
+    id: 'jason',
+    name: existingInfluencerProfiles.jason.name,
+    email: existingInfluencerProfiles.jason.email,
     password: 'password123',
     role: 'influencer',
   },
@@ -162,6 +203,8 @@ export const createEmptyInfluencerProfile = ({ name = '', email = '' } = {}) => 
   },
   profileImage: '',
   status: 'active',
+  bioState: 'Approved',
+  bioStatus: 'approved',
   isProfileComplete: false,
 });
 
@@ -221,6 +264,8 @@ export const normalizeInfluencerProfile = (profile = {}) => ({
     location: '',
     ...(profile.audience || {}),
   },
+  bioState: profile.bioState === 'Flagged' || profile.bioStatus === 'flagged' ? 'Flagged' : 'Approved',
+  bioStatus: profile.bioState === 'Flagged' || profile.bioStatus === 'flagged' ? 'flagged' : 'approved',
   isProfileComplete: hasProfileCompleteFlag(profile) ? profile.isProfileComplete === true : undefined,
 });
 

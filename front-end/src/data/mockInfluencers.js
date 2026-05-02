@@ -1,10 +1,12 @@
 import SaraBImage from "../assets/images/SaraBlogs-Profile.jpg";
 import LisaSImage from "../assets/images/Lisa-Profile.jpg";
+import JasonImage from "../assets/images/AhmedFit-Profile.jpg";
 
 export const influencerProfiles = [
   {
     id: "sarah-johnson",
     name: "Sarah Johnson",
+    email: "sarah.johnson@email.com",
     role: "Fashion & Lifestyle",
     rating: "4.9",
     engagement: "8.5%",
@@ -20,6 +22,7 @@ export const influencerProfiles = [
   {
     id: "mia-carter",
     name: "Mia Carter",
+    email: "mia.carter@email.com",
     role: "Lifestyle & Travel",
     rating: "4.8",
     engagement: "10.5%",
@@ -31,6 +34,22 @@ export const influencerProfiles = [
     niches: ["Lifestyle", "Travel", "Short-form Video"],
     platforms: ["Instagram", "TikTok"],
     audience: "Young adults 20-30 following travel inspiration and curated lifestyle content.",
+  },
+  {
+    id: "jason-creator",
+    name: "Jason Lee",
+    email: "jason.creator@email.com",
+    role: "Fitness & Tech",
+    rating: "4.7",
+    engagement: "9.2%",
+    age: "27",
+    followers: "48.6K",
+    imageSrc: JasonImage,
+    location: "Riyadh, Saudi Arabia",
+    bio: "Fitness and tech lifestyle creator producing practical product reviews, short-form tutorials, and energetic campaign content.",
+    niches: ["Fitness", "Tech", "Lifestyle"],
+    platforms: ["Instagram", "TikTok", "YouTube"],
+    audience: "Young adults 18-34 interested in fitness routines, creator tech, and lifestyle upgrades.",
   },
 ];
 

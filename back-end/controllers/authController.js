@@ -36,7 +36,203 @@ const createInitialInfluencerProfile = async (user) => {
     profileImage: '',
     status: 'active',
     isProfileComplete: false,
+    bioState: 'Approved',
+    bioStatus: 'approved',
   });
+};
+
+const DEMO_INFLUENCER_PASSWORD = 'password123';
+
+const demoInfluencerProfiles = {
+  'sarah.johnson@email.com': {
+    name: 'Sarah Johnson',
+    email: 'sarah.johnson@email.com',
+    bio: 'Fashion and lifestyle content creator with 50K+ followers. Specializing in authentic reviews and trend analysis.',
+    location: 'New York, USA',
+    website: 'https://sarahjohnson.com',
+    instagram: '@sarahjohnson',
+    tiktok: '@sarahjohnson',
+    youtube: 'Sarah Johnson',
+    followers: '52.3K',
+    engagement: '4.2%',
+    categories: ['Fashion', 'Lifestyle', 'Beauty'],
+    rates: {
+      post: '$800-1200',
+      story: '$300-500',
+      video: '$1500-2500',
+    },
+    audience: {
+      age: '18-34',
+      gender: '65% Female',
+      location: 'US, UK, Canada',
+    },
+  },
+  'mia.carter@email.com': {
+    name: 'Mia Carter',
+    email: 'mia.carter@email.com',
+    bio: 'Lifestyle and beauty creator known for polished reels, honest product reviews, and warm everyday storytelling.',
+    location: 'Dubai, UAE',
+    website: 'https://miacarter.co',
+    instagram: '@miacarter',
+    tiktok: '@miacarter',
+    youtube: 'Mia Carter',
+    followers: '41.8K',
+    engagement: '5.1%',
+    categories: ['Lifestyle', 'Beauty', 'Travel'],
+    rates: {
+      post: '$700-1000',
+      story: '$250-450',
+      video: '$1200-2100',
+    },
+    audience: {
+      age: '20-32',
+      gender: '58% Female',
+      location: 'UAE, Saudi Arabia, UK',
+    },
+  },
+  'jason.creator@email.com': {
+    name: 'Jason Lee',
+    email: 'jason.creator@email.com',
+    bio: 'Fitness and tech lifestyle creator producing practical product reviews, short-form tutorials, and energetic campaign content.',
+    location: 'Riyadh, Saudi Arabia',
+    website: 'https://jasoncreator.com',
+    instagram: '@jasoncreator',
+    tiktok: '@jasoncreator',
+    youtube: 'Jason Creator',
+    followers: '48.6K',
+    engagement: '4.8%',
+    categories: ['Fitness', 'Tech', 'Lifestyle'],
+    rates: {
+      post: '$750-1100',
+      story: '$250-450',
+      video: '$1300-2200',
+    },
+    audience: {
+      age: '18-34',
+      gender: 'Mixed',
+      location: 'Saudi Arabia, UAE, UK',
+    },
+  },
+};
+
+const normalizeEmail = (email = '') => email.trim().toLowerCase();
+
+const hasValue = (value) => {
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  return value !== undefined && value !== null && value !== '';
+};
+
+const fillMissingInfluencerProfileFields = (influencer, demoProfile) => {
+  [
+    'name',
+    'email',
+    'bio',
+    'location',
+    'website',
+    'instagram',
+    'tiktok',
+    'youtube',
+    'followers',
+    'engagement',
+  ].forEach((field) => {
+    if (!hasValue(influencer[field])) {
+      influencer[field] = demoProfile[field];
+    }
+  });
+
+  if (!Array.isArray(influencer.categories) || influencer.categories.length === 0) {
+    influencer.categories = demoProfile.categories;
+  }
+
+  influencer.rates = influencer.rates || {};
+  ['post', 'story', 'video'].forEach((field) => {
+    if (!hasValue(influencer.rates[field])) {
+      influencer.rates[field] = demoProfile.rates[field];
+    }
+  });
+
+  influencer.audience = influencer.audience || {};
+  ['age', 'gender', 'location'].forEach((field) => {
+    if (!hasValue(influencer.audience[field])) {
+      influencer.audience[field] = demoProfile.audience[field];
+    }
+  });
+
+  influencer.status = influencer.status || 'active';
+  influencer.isProfileComplete = true;
+  influencer.bioState = influencer.bioState || 'Approved';
+  influencer.bioStatus = influencer.bioStatus || (influencer.bioState === 'Flagged' ? 'flagged' : 'approved');
+};
+
+const ensureDemoInfluencerAccount = async (email) => {
+  const demoProfile = demoInfluencerProfiles[normalizeEmail(email)];
+  if (!demoProfile) {
+    return null;
+  }
+
+  let user = await User.findOne({ email: demoProfile.email });
+  if (!user) {
+    user = await User.create({
+      name: demoProfile.name,
+      email: demoProfile.email,
+      password: await User.hashPassword(DEMO_INFLUENCER_PASSWORD),
+      role: 'influencer',
+      isActive: true,
+    });
+  } else {
+    let userChanged = false;
+    const hasDemoPassword = await user.comparePassword(DEMO_INFLUENCER_PASSWORD);
+
+    if (!hasDemoPassword) {
+      user.password = await User.hashPassword(DEMO_INFLUENCER_PASSWORD);
+      userChanged = true;
+    }
+
+    if (user.role !== 'influencer') {
+      user.role = 'influencer';
+      userChanged = true;
+    }
+
+    if (!user.isActive) {
+      user.isActive = true;
+      userChanged = true;
+    }
+
+    if (!user.name) {
+      user.name = demoProfile.name;
+      userChanged = true;
+    }
+
+    if (userChanged) {
+      await user.save();
+    }
+  }
+
+  let influencer = await Influencer.findOne({ email: demoProfile.email });
+  if (!influencer) {
+    influencer = await Influencer.findOne({ userId: user._id });
+  }
+
+  if (!influencer) {
+    influencer = new Influencer({
+      userId: user._id,
+      ...demoProfile,
+      profileImage: '',
+      status: 'active',
+      isProfileComplete: true,
+      bioState: 'Approved',
+      bioStatus: 'approved',
+    });
+  } else {
+    influencer.userId = user._id;
+    fillMissingInfluencerProfileFields(influencer, demoProfile);
+  }
+
+  await influencer.save();
+  return user;
 };
 
 // @desc    Register new user (brand or influencer only)
@@ -116,7 +312,14 @@ exports.login = async (req, res) => {
         .json({ message: 'Please provide email and password' });
     }
 
-    const user = await User.findOne({ email });
+    const isDemoInfluencerLogin =
+      password === DEMO_INFLUENCER_PASSWORD &&
+      Boolean(demoInfluencerProfiles[normalizeEmail(email)]);
+
+    const user = isDemoInfluencerLogin
+      ? await ensureDemoInfluencerAccount(email)
+      : await User.findOne({ email });
+
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }

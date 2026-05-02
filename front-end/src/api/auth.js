@@ -84,19 +84,21 @@ export async function loginUser({ email, password }) {
     password,
   });
 
-  if (mockInfluencerAccount) {
-    return toAuthResponse(mockInfluencerAccount);
+  try {
+    const res = await fetch(`${API_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    return await readJson(res);
+  } catch (error) {
+    if (mockInfluencerAccount) {
+      return toAuthResponse(mockInfluencerAccount);
+    }
+
+    throw error;
   }
-
-  const res = await fetch(`${API_URL}/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-
-  const data = await readJson(res);
-
-  return data;
 }
 
 // Get current logged-in user

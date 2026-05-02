@@ -16,6 +16,14 @@ const defaultAudience = {
   location: '',
 };
 
+const normalizeBioState = (bioState, bioStatus) => {
+  if (bioState === 'Flagged' || bioStatus === 'flagged') {
+    return 'Flagged';
+  }
+
+  return 'Approved';
+};
+
 const getValidationError = (req, res) => {
   const errors = validationResult(req);
   if (errors.isEmpty()) {
@@ -159,6 +167,7 @@ const formatInfluencer = (influencer) => {
   const socialLinks = influencerObject.socialLinks || {};
   const rates = influencerObject.rates || {};
   const audience = influencerObject.audience || {};
+  const bioState = normalizeBioState(influencerObject.bioState, influencerObject.bioStatus);
 
   return {
     ...influencerObject,
@@ -189,6 +198,8 @@ const formatInfluencer = (influencer) => {
     },
     status: influencerObject.status || 'active',
     isProfileComplete: Boolean(influencerObject.isProfileComplete),
+    bioState,
+    bioStatus: bioState === 'Flagged' ? 'flagged' : 'approved',
   };
 };
 
