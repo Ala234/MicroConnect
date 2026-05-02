@@ -36,6 +36,8 @@ const createInitialInfluencerProfile = async (user) => {
     profileImage: '',
     status: 'active',
     isProfileComplete: false,
+    bioState: 'Approved',
+    bioStatus: 'approved',
   });
 };
 

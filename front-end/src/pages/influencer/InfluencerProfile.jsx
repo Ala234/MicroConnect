@@ -34,6 +34,9 @@ const audienceMeta = [
 
 const emptyText = 'Not set';
 
+const getBioState = (profile) =>
+  profile.bioState === 'Flagged' || profile.bioStatus === 'flagged' ? 'Flagged' : 'Approved';
+
 const fieldLabels = {
   name: 'Full Name',
   email: 'Email',
@@ -92,6 +95,8 @@ export default function InfluencerProfile() {
   const displayName = profile.name || 'Influencer Profile';
   const displayLocation = profile.location || emptyText;
   const displayBio = profile.bio || emptyText;
+  const bioState = getBioState(profile);
+  const bioStateClass = bioState === 'Flagged' ? 'bio-state-flagged' : 'bio-state-approved';
 
   const handleSave = async () => {
     const validation = validateInfluencerProfile(profile);
@@ -233,7 +238,12 @@ export default function InfluencerProfile() {
             </div>
 
             <div className="profile-info-main">
-              <p className="profile-kicker">Influencer Profile</p>
+              <div className="profile-title-row">
+                <p className="profile-kicker">Influencer Profile</p>
+                <span className={`bio-state-badge ${bioStateClass}`} aria-label={`Bio state: ${bioState}`}>
+                  {bioState}
+                </span>
+              </div>
               <h1 className="profile-name">{displayName}</h1>
               <p className="profile-location">{displayLocation}</p>
               <p className="profile-bio-preview">{displayBio}</p>
