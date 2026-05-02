@@ -8,6 +8,17 @@ const handleResponse = async (res) => {
     if (!res.ok) {
       return { success: false, message: data.message || "Request failed" };
     }
+
+    if (
+      data?.success === undefined &&
+      (Array.isArray(data) || Array.isArray(data?.campaigns) || Array.isArray(data?.data) || data?.campaign)
+    ) {
+      return {
+        ...(Array.isArray(data) ? { campaigns: data } : data),
+        success: true,
+      };
+    }
+
     return data;
   } catch (err) {
     return { success: false, message: err.message };
