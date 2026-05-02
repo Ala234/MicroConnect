@@ -2,7 +2,6 @@ import "../../styles/dashboard.css";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  FiArrowRight,
   FiCalendar,
   FiCheck,
   FiDollarSign,
@@ -107,6 +106,7 @@ export default function DeleteCampaign() {
 
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
@@ -252,6 +252,15 @@ export default function DeleteCampaign() {
     <div className="dashboard-page campaign-review-page">
       <div className="dashboard-shell">
         <div className="dashboard-topbar">
+          <button
+            className="back-btn-large"
+            onClick={() => navigate(-1)}
+            aria-label="Back"
+            type="button"
+          >
+            ←
+          </button>
+
           <div className="dashboard-logo">
             <div className="dashboard-logo-icon">M</div>
             <span>MicroConnect</span>
@@ -261,14 +270,6 @@ export default function DeleteCampaign() {
             <button className="dashboard-logout ghost" onClick={handleLogout}>
               <FiLogOut />
               <span>Log out</span>
-            </button>
-
-            <button
-              className="campaign-review-arrow"
-              onClick={() => navigate("/brand")}
-              aria-label="Back to brand dashboard"
-            >
-              <FiArrowRight />
             </button>
           </div>
         </div>
@@ -409,7 +410,7 @@ export default function DeleteCampaign() {
                       <span>Followers</span>
                       <strong>{applicant.followers}</strong>
                     </div>
-                    </div>
+                  </div>
 
                   <div className="campaign-application-actions stacked">
                     <button

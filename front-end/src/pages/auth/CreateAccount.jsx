@@ -33,7 +33,7 @@ export default function CreateAccount() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       // Redirect based on role
-      if (data.user.role === "brand") navigate("/brand");
+      if (data.user.role === "brand") navigate("/brand/setup");
       else if (data.user.role === "influencer") navigate("/influencer/setup");
     } catch (err) {
       alert(err.message);

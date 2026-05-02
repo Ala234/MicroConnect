@@ -3,16 +3,44 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCampaigns } from "../../data/mockCampaigns";
 
+const createPlaceholderLogo = (name) => {
+  const initial = (name || "B").charAt(0).toUpperCase().replace(/[^A-Z0-9]/, "B");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1f2640"/><circle cx="50" cy="50" r="30" fill="#8fb0ff"/><text x="50" y="58" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#1f2640">${initial}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
 export default function BrandDashboard() {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
+  const [brandName, setBrandName] = useState("Brand");
+  const [brandLogo, setBrandLogo] = useState("");
 
   useEffect(() => {
+    const stored = localStorage.getItem("user");
+    const user = stored ? JSON.parse(stored) : null;
+
+    if (!user || user.role !== "brand") {
+      navigate("/login");
+      return;
+    }
+
+    const brandProfile = localStorage.getItem("brandProfile");
+    if (!brandProfile) {
+      navigate("/brand/setup");
+      return;
+    }
+
+    const profile = JSON.parse(brandProfile);
+    const name = profile.companyName || user.name || "Brand";
+    setBrandName(name);
+    setBrandLogo(profile.logo || createPlaceholderLogo(name));
+
     setCampaigns(getCampaigns());
-  }, []);
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
@@ -26,8 +54,33 @@ export default function BrandDashboard() {
         <div className="dashboard-topbar">
           <div className="dashboard-logo">
             <div className="dashboard-logo-icon">M</div>
-            <span>MicroConnect</span>
+            <div>
+              <p className="brand-name">MicroConnect</p>
+              <p className="brand-subtitle">Brand Portal</p>
+            </div>
           </div>
+
+          {/* Brand Top Nav */}
+          <nav className="influencer-top-nav">
+            <button
+              className="influencer-nav-link active"
+              onClick={() => navigate("/brand")}
+            >
+              Campaigns
+            </button>
+            <button
+              className="influencer-nav-link"
+              onClick={() => navigate("/brand/profile")}
+            >
+              Profile
+            </button>
+            <button
+              className="influencer-nav-link"
+              onClick={() => navigate("/brand/contracts")}
+            >
+              Contracts
+            </button>
+          </nav>
 
           <button className="dashboard-logout" onClick={handleLogout}>
             Log out
@@ -35,9 +88,16 @@ export default function BrandDashboard() {
         </div>
 
         <div className="dashboard-body">
-          <div className="dashboard-hero">
-            <h1>Brand Dashboard</h1>
-            <p>Manage your campaigns and connect with micro-influencers</p>
+          <div className="dashboard-hero brand-hero-with-logo">
+            <img
+              src={brandLogo}
+              alt={`${brandName} logo`}
+              className="brand-hero-logo"
+            />
+            <div>
+              <h1>Welcome, {brandName} ! </h1>
+              <p>Manage your campaigns and connect with micro-influencers</p>
+            </div>
           </div>
 
           <div className="dashboard-stats">
@@ -108,15 +168,12 @@ export default function BrandDashboard() {
                     <div className="dashboard-progress">
                       <div style={{ width: `${campaign.progress}%` }}></div>
                     </div>
-                    <div className="dashboard-campaign-actions">
-                       
-                    </div>
+                    <div className="dashboard-campaign-actions"></div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-
         </div>
       </div>
     </div>
