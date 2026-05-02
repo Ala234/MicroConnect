@@ -8,11 +8,28 @@ export default function BrandDashboard() {
   const [campaigns, setCampaigns] = useState([]);
 
   useEffect(() => {
+    // Check if user is logged in as brand
+    const stored = localStorage.getItem("user");
+    const user = stored ? JSON.parse(stored) : null;
+
+    if (!user || user.role !== "brand") {
+      navigate("/login");
+      return;
+    }
+
+    // Check if brand profile is complete - if not, send to setup
+    const brandProfile = localStorage.getItem("brandProfile");
+    if (!brandProfile) {
+      navigate("/brand/setup");
+      return;
+    }
+
     setCampaigns(getCampaigns());
-  }, []);
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
@@ -26,8 +43,33 @@ export default function BrandDashboard() {
         <div className="dashboard-topbar">
           <div className="dashboard-logo">
             <div className="dashboard-logo-icon">M</div>
-            <span>MicroConnect</span>
+            <div>
+              <p className="brand-name">MicroConnect</p>
+              <p className="brand-subtitle">Brand Portal</p>
+            </div>
           </div>
+
+          {/* Brand Top Nav */}
+          <nav className="influencer-top-nav">
+            <button
+              className="influencer-nav-link active"
+              onClick={() => navigate("/brand")}
+            >
+              Campaigns
+            </button>
+            <button
+              className="influencer-nav-link"
+              onClick={() => navigate("/brand/profile")}
+            >
+              Profile
+            </button>
+            <button
+              className="influencer-nav-link"
+              onClick={() => navigate("/brand/contracts")}
+            >
+              Contracts
+            </button>
+          </nav>
 
           <button className="dashboard-logout" onClick={handleLogout}>
             Log out
@@ -108,15 +150,12 @@ export default function BrandDashboard() {
                     <div className="dashboard-progress">
                       <div style={{ width: `${campaign.progress}%` }}></div>
                     </div>
-                    <div className="dashboard-campaign-actions">
-                       
-                    </div>
+                    <div className="dashboard-campaign-actions"></div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-
         </div>
       </div>
     </div>
