@@ -5,6 +5,7 @@ const Application = require('../models/Application');
 const { Policy, Commission } = require('../models/Settings');
 const Influencer  = require('../models/Influencer');
 const Dispute = require('../models/Dispute');
+const Contract = require('../models/Contract');
 
 // ── DASHBOARD STATS ────────────────────────────────────
 // GET /api/admin/stats
@@ -461,8 +462,46 @@ const getDisputeById = async (req, res) => {
   }
 };
 
+
+// ── CONTRACTS ──────────────────────────────────────────
+// GET /api/admin/contracts
+const getAllContracts = async (req, res) => {
+  try {
+    const { status, search } = req.query;
+
+    const filter = {};
+    if (status) filter.status = status;
+    if (search) filter.$or = [
+      { contractId: { $regex: search, $options: 'i' } },
+    ];
+
+    const contracts = await Contract.find(filter)
+      .populate('brandId',      'companyName')
+      .populate('influencerId', 'name')
+      .populate('campaignId',   'title')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(contracts);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch contracts', error: error.message });
+  }
+};
+
+// GET /api/admin/contracts/:id
+const getContractById = async (req, res) => {
+  try {
+    const contract = await Contract.findById(req.params.id)
+      .populate('brandId',      'companyName')
+      .populate('influencerId', 'name email')
+      .populate('campaignId',   'title');
+
+    if (!contract) return res.status(404).json({ message: 'Contract not found' });
+    res.status(200).json(contract);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch contract', error: error.message });
+  }
+};
 // ── TODO (no models yet) ───────────────────────────────
-// getAllContracts    → waiting for Contract model
 // getAllTransactions → waiting for Transaction model
 
 module.exports = {
@@ -491,5 +530,6 @@ module.exports = {
   resolveDispute,
   getDisputeStats,
   getDisputeById,
-  updateAdminProfile
+  getAllContracts,
+  getContractById,
 };
