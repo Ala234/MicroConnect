@@ -3,6 +3,7 @@ const Campaign    = require('../models/Campaign');
 const Brand       = require('../models/Brand');
 const Application = require('../models/Application');
 const { Policy, Commission } = require('../models/Settings');
+const Influencer  = require('../models/Influencer');
 
 // ── DASHBOARD STATS ────────────────────────────────────
 // GET /api/admin/stats
@@ -14,6 +15,7 @@ const getDashboardStats = async (req, res) => {
     const totalCampaigns    = await Campaign.countDocuments();
     const activeCampaigns   = await Campaign.countDocuments({ status: 'open' });
     const totalApplications = await Application.countDocuments();
+    const flaggedBios       = await Influencer.countDocuments({ bioStatus: 'flagged' });
 
     res.status(200).json({
       totalUsers,
@@ -22,6 +24,7 @@ const getDashboardStats = async (req, res) => {
       totalCampaigns,
       activeCampaigns,
       totalApplications,
+      flaggedBios,
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch dashboard stats', error: error.message });
@@ -35,9 +38,9 @@ const getAllUsers = async (req, res) => {
     const { role, isActive, search } = req.query;
 
     const filter = {};
-    if (role)              filter.role     = role;
+    if (role)                  filter.role     = role;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
-    if (search)            filter.$or = [
+    if (search)                filter.$or = [
       { name:  { $regex: search, $options: 'i' } },
       { email: { $regex: search, $options: 'i' } },
     ];
@@ -90,6 +93,77 @@ const deleteUser = async (req, res) => {
     res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete user', error: error.message });
+  }
+};
+
+// GET /api/admin/users/:id/influencer-profile
+const getInfluencerProfile = async (req, res) => {
+  try {
+    const influencer = await Influencer.findOne({ userId: req.params.id });
+    if (!influencer) return res.status(404).json({ message: 'Influencer profile not found' });
+    res.status(200).json(influencer);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch influencer profile', error: error.message });
+  }
+};
+
+// GET /api/admin/users/:id/brand-profile
+const getBrandProfile = async (req, res) => {
+  try {
+    const brand = await Brand.findOne({ userId: req.params.id });
+    if (!brand) return res.status(404).json({ message: 'Brand profile not found' });
+    res.status(200).json(brand);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch brand profile', error: error.message });
+  }
+};
+
+// ── INFLUENCERS ────────────────────────────────────────
+// GET /api/admin/influencers
+const getAllInfluencers = async (req, res) => {
+  try {
+    const { bioStatus, search } = req.query;
+    const filter = {};
+    if (bioStatus) filter.bioStatus = bioStatus;
+    if (search)    filter.$or = [
+      { name:  { $regex: search, $options: 'i' } },
+      { email: { $regex: search, $options: 'i' } },
+    ];
+
+    const influencers = await Influencer.find(filter)
+      .populate('userId', 'name email isActive')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(influencers);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch influencers', error: error.message });
+  }
+};
+
+// PATCH /api/admin/influencers/:id/bio-status
+const updateInfluencerBioStatus = async (req, res) => {
+  try {
+    const { bioStatus } = req.body;
+    const allowed = ['approved', 'flagged'];
+
+    if (!allowed.includes(bioStatus)) {
+      return res.status(400).json({ message: 'bioStatus must be approved or flagged' });
+    }
+
+    const influencer = await Influencer.findByIdAndUpdate(
+      req.params.id,
+      { bioStatus },
+      { new: true }
+    );
+
+    if (!influencer) return res.status(404).json({ message: 'Influencer not found' });
+
+    res.status(200).json({
+      message: `Bio ${bioStatus === 'approved' ? 'approved' : 'flagged'} successfully`,
+      influencer,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update bio status', error: error.message });
   }
 };
 
@@ -249,12 +323,49 @@ const updateCommission = async (req, res) => {
   }
 };
 
+// GET /api/admin/profile
+const getAdminProfile = async (req, res) => {
+  try {
+    res.status(200).json(req.user);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch profile', error: error.message });
+  }
+};
+
+// PUT /api/admin/profile
+const updateAdminProfile = async (req, res) => {
+  try {
+    const { name, currentPassword, newPassword } = req.body;
+
+    const admin = await User.findById(req.user._id);
+
+    if (name) admin.name = name.trim();
+
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: 'Current password is required' });
+      }
+      const isMatch = await admin.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Current password is incorrect' });
+      }
+      admin.password = await User.hashPassword(newPassword);
+    }
+
+    await admin.save();
+
+    const updated = await User.findById(admin._id).select('-password');
+    res.status(200).json({ message: 'Profile updated successfully', user: updated });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update profile', error: error.message });
+  }
+};
+
 // ── TODO (no models yet) ───────────────────────────────
 // getAllContracts    → waiting for Contract model
 // getAllDisputes     → waiting for Dispute model
 // resolveDispute    → waiting for Dispute model
 // getAllTransactions → waiting for Transaction model
-// getContentReview  → waiting for Content model
 
 module.exports = {
   getDashboardStats,
@@ -262,6 +373,10 @@ module.exports = {
   getUserById,
   toggleSuspendUser,
   deleteUser,
+  getInfluencerProfile,
+  getBrandProfile,
+  getAllInfluencers,
+  updateInfluencerBioStatus,
   getAllCampaigns,
   getCampaignById,
   getAllBrands,
@@ -272,4 +387,6 @@ module.exports = {
   deletePolicy,
   getCommission,
   updateCommission,
+  getAdminProfile,
+  updateAdminProfile
 };
