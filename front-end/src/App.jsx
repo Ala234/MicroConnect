@@ -30,6 +30,9 @@ import DeleteCampaign from "./pages/brand/DeleteCampaign";
 import ContractPage from "./pages/brand/ContractPage";
 import UserDetail from "./pages/admin/UserDetail";
 import AdminProfile from "./pages/admin/AdminProfile";
+import BrandProfileSetup from './pages/brand/BrandProfileSetup';
+
+
 
 import InfluencerProfilee from "./pages/brand/InfluencerProfile";
 function App() {
@@ -39,6 +42,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/brand" element={<Brand />} />
+        <Route path="/brand/setup" element={<BrandProfileSetup />} />
         <Route path="/influencer" element={<AvailableCampaigns />} />
         <Route path="/influencer/setup" element={<InfluencerSetup />} />
         <Route path="/influencer/profile" element={<InfluencerProfile />} />
