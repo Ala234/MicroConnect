@@ -9,22 +9,16 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.send('MicroConnect API is running ');
+  res.send('MicroConnect API is running');
 });
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/brands', require('./routes/brandRoutes'));
-app.use('/api/admin',  require('./routes/adminRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/influencers', require('./routes/influencerRoutes'));
-
-const {
-  campaignRouter,
-} = require('./routes/campaignRoutes');
-const applicationRoutes = require('./routes/applicationRoutes');
-
-app.use('/api/campaigns', campaignRouter);
-app.use('/api/applications', applicationRoutes);
+app.use('/api/campaigns', require('./routes/campaignRoutes'));
+app.use('/api/applications', require('./routes/applicationRoutes'));
 
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 app.use(notFound);

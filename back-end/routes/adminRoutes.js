@@ -27,7 +27,7 @@ const {
   resolveDispute,
   getDisputeStats,
   getDisputeById,
-  updateAdminProfile
+ 
 } = require('../controllers/adminController');
 
 const { protect }   = require('../middleware/authMiddleware');

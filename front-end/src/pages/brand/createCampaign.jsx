@@ -123,7 +123,6 @@ export default function CreateCampaign() {
       targetAudience,
       contentType,
       platforms,
-      imageKey: "spring",
       imageSrc: campaignImage,
     });
 
@@ -174,7 +173,6 @@ export default function CreateCampaign() {
           ) : null}
 
           <div className="campaign-form-grid">
-            {/* Campaign Image Upload */}
             <div className="campaign-form-group full-width">
               <label>Campaign Image</label>
               <div className="campaign-image-upload">
