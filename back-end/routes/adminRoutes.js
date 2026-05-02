@@ -21,6 +21,8 @@ const {
   getBrandProfile,
   updateInfluencerBioStatus,
   getAllInfluencers,
+  getAdminProfile,
+  updateAdminProfile
 } = require('../controllers/adminController');
 
 const { protect }   = require('../middleware/authMiddleware');
@@ -29,6 +31,8 @@ const { authorize } = require('../middleware/roleMiddleware');
 // All routes require login + admin role
 router.use(protect);
 router.use(authorize('admin'));
+router.get('/profile', getAdminProfile);
+router.put('/profile', updateAdminProfile);
 
 // ── DASHBOARD ──────────────────────────────────────────
 router.get('/stats', getDashboardStats);

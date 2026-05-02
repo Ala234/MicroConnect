@@ -323,6 +323,44 @@ const updateCommission = async (req, res) => {
   }
 };
 
+// GET /api/admin/profile
+const getAdminProfile = async (req, res) => {
+  try {
+    res.status(200).json(req.user);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch profile', error: error.message });
+  }
+};
+
+// PUT /api/admin/profile
+const updateAdminProfile = async (req, res) => {
+  try {
+    const { name, currentPassword, newPassword } = req.body;
+
+    const admin = await User.findById(req.user._id);
+
+    if (name) admin.name = name.trim();
+
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: 'Current password is required' });
+      }
+      const isMatch = await admin.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Current password is incorrect' });
+      }
+      admin.password = await User.hashPassword(newPassword);
+    }
+
+    await admin.save();
+
+    const updated = await User.findById(admin._id).select('-password');
+    res.status(200).json({ message: 'Profile updated successfully', user: updated });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update profile', error: error.message });
+  }
+};
+
 // ── TODO (no models yet) ───────────────────────────────
 // getAllContracts    → waiting for Contract model
 // getAllDisputes     → waiting for Dispute model
@@ -349,4 +387,6 @@ module.exports = {
   deletePolicy,
   getCommission,
   updateCommission,
+  getAdminProfile,
+  updateAdminProfile
 };

@@ -28,6 +28,7 @@ import CreateCampaign from "./pages/brand/createCampaign";
 import DeleteCampaign from "./pages/brand/DeleteCampaign";
 import ContractPage from "./pages/brand/ContractPage";
 import UserDetail from "./pages/admin/UserDetail";
+import AdminProfile from "./pages/admin/AdminProfile";
 
 import InfluencerProfilee from "./pages/brand/InfluencerProfile";
 function App() {
@@ -63,6 +64,7 @@ function App() {
         <Route path="/ContentReview" element={<ContentReview />} />
         <Route path="/settings" element={<AdminSettings />} />
         <Route path="/admin/users/:id" element={<UserDetail />} />
+        <Route path="/admin/profile" element={<AdminProfile />} />
       </Routes>
     </BrowserRouter>
   );
