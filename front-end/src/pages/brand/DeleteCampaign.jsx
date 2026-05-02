@@ -88,10 +88,14 @@ export default function DeleteCampaign() {
 
   const handleApplicantAction = async (application, nextStatus) => {
     if (nextStatus === "accepted") {
-      await updateApplicationStatus(application._id, "accepted");
-      navigate(
-        `/contracts?campaignId=${campaignId}&influencer=${application.influencerId}&state=draft`
-      );
+      const result = await updateApplicationStatus(application._id, "accepted");
+      if (result.success) {
+        navigate(
+          `/contracts?campaignId=${campaignId}&influencer=${application.influencerId}&applicationId=${application._id}&state=draft`
+        );
+      } else {
+        showBanner("Application update failed", result.message || "Could not accept this application");
+      }
       return;
     }
 

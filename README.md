@@ -1,170 +1,336 @@
 # MicroConnect
 
-## 📌 Project Description
-MicroConnect is a web platform that connects brands with influencers to collaborate efficiently. The system provides different interfaces for each user type (Brand, Influencer, Admin) with a focus on usability and clean UI design based on Figma prototypes.
+## Project Description
 
-This project is developed as part of SWE363 course (Phase 3: Requirement & Prototyping).
+MicroConnect is a platform that connects brands with micro-influencers. Brands can create campaigns, influencers can apply to campaigns, contracts can be created after accepted proposals, and admins can manage users, disputes, contracts, policies, and platform settings.
 
----
-## 📌 Project Structure
+## Tech Stack
 
-The project is organized into several main folders to keep the code clean and maintainable, inside **📁 src /** you will see:
+| Layer | Technology |
+|---|---|
+| Frontend | React + Vite |
+| Backend | Node.js + Express.js |
+| Database | MongoDB Atlas with Mongoose |
+| Authentication | JWT |
 
-### 📁 assets/
-This folder contains all  images used throughout the application.
+## Project Structure
 
-### 📁 data/
-This folder includes mock data files (e.g., users, campaigns).  
-> Since this is a front-end project, the application relies on mock data instead of a real backend or API.
-
-### 📁 pages/
-This folder contains the main pages of the application.
-
-Inside this folder, the pages are organized based on user roles:
-
-- Brand
-- Influencer
-- Admin
-- auth (authentication)
-- common (home page)
-
-> Each role has its own folder that contains the related pages and features specific to that user type.
-
-### 📁 styles/
-This folder includes shared styling files (CSS) used across the application, such as global styles and common design elements.
-
-> This structure helps in organizing the project efficiently and makes it easier to scale and maintain.
-
-## ⚙️ Setup & Installation
-
-Follow these steps to run the project locally:
-
-### 1. Clone the repository
-```bash 
-git clone https://github.com/Ala234/MicroConnect.git
+```text
+MicroConnect/
+├── back-end/
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   └── server.js
+├── front-end/
+│   ├── src/
+│   ├── public/
+│   └── package.json
+├── .gitignore
+└── README.md
 ```
 
-### 2. Navigate to the project folder
-```bash 
-cd .\front-end
+Backend folders:
+
+- `config`: MongoDB connection
+- `controllers`: request/response logic
+- `middleware`: authentication, role checks, and error handling
+- `models`: Mongoose schemas
+- `routes`: API endpoint definitions
+- `server.js`: Express server entry point
+
+## Environment Variables
+
+Create a `.env` file inside `back-end/` with the following variables:
+
+```env
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+JWT_EXPIRES_IN=7d
 ```
-### 3. Install dependencies
-```bash 
+
+Do not paste real secret values into the README. The `.env` file is included in `.gitignore`, so database credentials and JWT secrets should stay local.
+
+## How to Run the Backend
+
+```bash
+cd back-end
 npm install
+node server.js
 ```
-### 4. Run the development server
-```bash 
+
+Expected output:
+
+```text
+✅ MongoDB Connected Successfully
+Server running on port 5000
+```
+
+## How to Run the Frontend
+
+```bash
+cd front-end
+npm install
 npm run dev
 ```
-### 5. Open in browser
-```bash 
-http://localhost:5173/
-```
 
----
+The frontend runs on:
 
-## ⚠️ Windows Users (PowerShell Issue)
-
-If you encounter this error:
-npm.ps1 cannot be loaded because running scripts is disabled
-
-Run this command in PowerShell:
-```bash 
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-```
-Then try again.
-
----
-
-## 💻 Usage
-
-Open the project in the browser using:
+```text
 http://localhost:5173
-
-
-This project is a front-end application, so the data is currently handled using a mock data file (`mockCampaigns`, mockUsers, etc.) instead of a real API or backend.
-
-### Demo Access
-
-You can explore the system in two ways:
-
-#### 1. Login
-- Use any of the predefined users stored in the mock data.
-
-Demo Accounts:
-```bash 
-export const users = [
-  {
-    email: "brand@test.com",
-    password: "1234",
-    role: "brand",
-  },
-  {
-    email: "influencer@test.com",
-    password: "1234",
-    role: "influencer",
-  },
-  {
-    email: "admin@test.com",
-    password: "1234",
-    role: "admin",
-  },
-];
 ```
-#### 2. Create Account
-- You can also create a new account directly from the UI.
-- Enter any:
-  - Username
-  - Email
-  - Password
-- Then select your role:
-  - Brand
-  - Influencer
 
-After creating an account, you will be able to access the dashboard and interact with the application features.
+## User Roles
 
-> Note: Since this is a front-end only project, no real authentication is performed and all data is stored temporarily using mock data.
+Admin:
 
----
+- manage users
+- manage influencers and brands
+- review disputes
+- view contracts
+- manage policies and commission
 
-## 👥 Team Members
+Brand:
 
-| Name | ID | Role |
-|------|----|------|
-| Sarah Almas | 202261060 | Influncer |
-| Alanoud Aldaej | 202279560 | Home ,Authentication (login, create account, validity), Brand and Readme file |
-| Yaqin Shawkan | 202255400 | Admin |
-| Zainab Almusailiem | 202251360 | Brand |
+- create and manage campaigns
+- view applications/proposals
+- accept or reject applications
+- create/send contracts
 
-> Note: The work was distributed equally among team members based on the nature and complexity of tasks. All contributions were balanced to ensure fairness in terms of actual work effort.
+Influencer:
 
-> Note on Contributions: Sara worked on a separate branch and her work was later merged into the main branch. As a result, her name may not appear clearly in the commit history on the main branch, to view her contributions, please check the commit history and look for merge commits from her branch, where her work is included.
+- complete profile setup
+- browse campaigns
+- submit applications/proposals
+- view application status
+- receive and respond to contracts
+- raise disputes
 
+## Database Models
 
----
+| Model | Description |
+|---|---|
+| User | Stores name, email, password, role, and active status |
+| Influencer | Stores influencer profile, socials, audience, rates, and bioState |
+| Brand | Stores brand profile information |
+| Campaign | Stores campaign details created by brands |
+| Application | Stores influencer proposals/applications |
+| Contract | Stores brand-influencer contracts |
+| Dispute | Stores disputes submitted by users |
+| Settings | Stores platform policy and commission settings |
 
-## 🔐 Environment Variables
+## API Documentation
 
-No API keys are currently required for this front-end prototype. Future integration may require .env configuration (not included in the repository for security reasons).
+### Auth Routes
 
----
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| POST | `/api/auth/register` | Register a brand or influencer | No |
+| POST | `/api/auth/login` | Login and receive JWT token | No |
+| POST | `/api/auth/logout` | Logout current user | Yes |
+| GET | `/api/auth/me` | Get current authenticated user | Yes |
 
-## 📝 Notes
+### Brand Routes
 
-- This project is a front-end prototype only  
-- Backend functionality will be implemented in future phases  
-- The UI is based on a Figma design created during Phase 3  
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| GET | `/api/brands` | Get all brand profiles | No |
+| GET | `/api/brands/:id` | Get one brand profile by ID | No |
+| PUT | `/api/brands/profile` | Create or update current brand profile | Yes, brand |
 
----
+### Influencer Routes
 
-## 📎 Figma Design
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| POST | `/api/influencers` | Create influencer profile | Yes, influencer |
+| GET | `/api/influencers` | Get influencer profiles with optional filters | No |
+| GET | `/api/influencers/profile/me` | Get current influencer profile | Yes, influencer |
+| PUT | `/api/influencers/profile/me` | Update current influencer profile | Yes, influencer |
+| GET | `/api/influencers/:id` | Get one influencer profile by ID | No |
+| PUT | `/api/influencers/:id` | Update owned influencer profile | Yes, influencer |
+| DELETE | `/api/influencers/:id` | Delete owned influencer profile | Yes, influencer |
 
-https://www.figma.com/design/KvuD9GvGwQqJ2pm5ABmph4/Phase-3?node-id=1-2700&p=f&t=eys0C4cBkKrESFWg-0
+### Campaign Routes
 
-> Note: The design matches the Figma prototype, with only slight changes in background and button colors, which were allowed by the instructor.
----
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| GET | `/api/campaigns` | Get active campaigns | Yes |
+| GET | `/api/campaigns/my` | Get campaigns created by current brand | Yes, brand |
+| GET | `/api/campaigns/:id` | Get one campaign by ID | Yes |
+| POST | `/api/campaigns` | Create a campaign | Yes, brand |
+| PUT | `/api/campaigns/:id` | Update an owned campaign | Yes, brand |
+| DELETE | `/api/campaigns/:id` | Delete an owned campaign | Yes, brand |
 
-## 📌 Status
+### Applications / Proposals Routes
 
-✅ Completed: Front-End Prototype (Milestone 4)  
-🔄 Next: Backend Integration
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| POST | `/api/applications` | Submit an application/proposal to a campaign | Yes, influencer |
+| GET | `/api/applications/my` | Get current influencer applications | Yes, influencer |
+| GET | `/api/applications/campaign/:campaignId` | Get applications for a brand campaign | Yes, brand |
+| PUT | `/api/applications/:id` | Accept or reject an application | Yes, brand |
+
+### Admin / Users Routes
+
+All admin routes require a valid JWT token for a user with the `admin` role.
+
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| GET | `/api/admin/profile` | Get current admin profile | Yes, admin |
+| PUT | `/api/admin/profile` | Update admin profile or password | Yes, admin |
+| GET | `/api/admin/stats` | Get dashboard statistics | Yes, admin |
+| GET | `/api/admin/users` | Get users with optional filters | Yes, admin |
+| GET | `/api/admin/users/:id` | Get one user by ID | Yes, admin |
+| PATCH | `/api/admin/users/:id/suspend` | Suspend or unsuspend a user | Yes, admin |
+| DELETE | `/api/admin/users/:id` | Delete a user | Yes, admin |
+| GET | `/api/admin/users/:id/influencer-profile` | Get a user's influencer profile | Yes, admin |
+| GET | `/api/admin/users/:id/brand-profile` | Get a user's brand profile | Yes, admin |
+| GET | `/api/admin/influencers` | Get influencers for admin/content review | Yes, admin |
+| PATCH | `/api/admin/influencers/:id/bio-status` | Approve or flag an influencer bio | Yes, admin |
+| GET | `/api/admin/campaigns` | Get campaigns for admin review | Yes, admin |
+| GET | `/api/admin/campaigns/:id` | Get one campaign for admin review | Yes, admin |
+| GET | `/api/admin/brands` | Get all brands for admin review | Yes, admin |
+| GET | `/api/admin/applications` | Get all applications | Yes, admin |
+
+### Disputes Routes
+
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| GET | `/api/admin/disputes` | Get all disputes | Yes, admin |
+| GET | `/api/admin/disputes/stats` | Get dispute statistics | Yes, admin |
+| GET | `/api/admin/disputes/:id` | Get one dispute by ID | Yes, admin |
+| PATCH | `/api/admin/disputes/:id/resolve` | Resolve a dispute with an admin response | Yes, admin |
+
+### Contracts Routes
+
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| GET | `/api/admin/contracts` | Get all contracts | Yes, admin |
+| GET | `/api/admin/contracts/:id` | Get one contract by ID | Yes, admin |
+
+### Settings / Policies Routes
+
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| GET | `/api/admin/policies` | Get platform policies | Yes, admin |
+| POST | `/api/admin/policies` | Add a platform policy | Yes, admin |
+| PUT | `/api/admin/policies/:id` | Update a platform policy | Yes, admin |
+| DELETE | `/api/admin/policies/:id` | Delete a platform policy | Yes, admin |
+| GET | `/api/admin/commission` | Get current commission rate | Yes, admin |
+| PUT | `/api/admin/commission` | Update commission rate | Yes, admin |
+
+## Example API Requests
+
+### Register
+
+```http
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Sara",
+  "email": "sara@example.com",
+  "password": "password123",
+  "role": "influencer"
+}
+```
+
+### Login
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "sara@example.com",
+  "password": "password123"
+}
+```
+
+### Create Campaign
+
+```http
+POST /api/campaigns
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Spring Collection",
+  "objective": "Brand Awareness",
+  "description": "Promote the new collection",
+  "startDate": "2026-05-01",
+  "endDate": "2026-06-30",
+  "budget": 3500,
+  "targetAudience": "Women 25-35 interested in fashion",
+  "contentType": "Short-form video review",
+  "platforms": ["Instagram", "TikTok"]
+}
+```
+
+### Submit Application
+
+```http
+POST /api/applications
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "campaignId": "CAMPAIGN_ID_HERE",
+  "proposal": "I would love to collaborate on this campaign."
+}
+```
+
+## Error Handling and Validation
+
+The backend uses `express-validator`, manual validation, and Mongoose schema validation. Error middleware exists in `back-end/middleware/errorMiddleware.js`.
+
+Common status codes:
+
+- `200`: success
+- `201`: created
+- `400`: validation error
+- `401`: unauthorized
+- `403`: forbidden
+- `404`: not found
+- `413`: payload too large
+- `500`: server error
+
+## Frontend/Backend Integration
+
+Connected features:
+
+- Authentication and role-based login
+- Influencer profile creation and updates
+- Campaign creation and listing
+- Applications/proposals
+- Brand application review
+- Admin user management
+- Admin content review
+- Disputes and contracts pages
+
+## Demo Accounts
+
+Influencer Demo Accounts:
+
+- Sarah/Sara: `sarah.johnson@email.com` / `password123`
+- Mia: `mia.carter@email.com` / `password123`
+- Jason: `jason.creator@email.com` / `password123`
+
+Do not include database credentials in the repository.
+
+## Security Notes
+
+- Do not commit `.env`.
+- Do not commit MongoDB credentials.
+- Do not commit JWT secrets.
+- `node_modules` is ignored.
+- Use JWT tokens in the Authorization header for protected routes.
+
+## Known Limitations
+
+- There is no automated test suite yet.
+- Response formats may vary slightly between controllers.
+- Admin account creation is not exposed through public registration.

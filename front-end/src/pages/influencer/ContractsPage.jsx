@@ -7,9 +7,9 @@ import {
   isInfluencerProfileComplete,
 } from '../../data/influencerAccounts';
 import {
-  getContractsForInfluencer,
+  getMyContracts,
   updateContractStatus,
-} from '../../data/contracts';
+} from '../../api/contracts';
 import '../../styles/influencer.css';
 
 const statusToneMap = {
@@ -20,6 +20,16 @@ const statusToneMap = {
 };
 
 const emptyText = 'Not set';
+
+const getContractKey = (contract) => contract.contractId || contract._id || contract.id;
+
+const formatFieldValue = (value) => {
+  if (Array.isArray(value)) {
+    return value.length ? value.join(', ') : emptyText;
+  }
+
+  return value || emptyText;
+};
 
 const formatDate = (date) => {
   if (!date) {
@@ -43,9 +53,11 @@ export default function ContractsPage() {
   const currentUser = useMemo(() => getCurrentUser(), []);
   const currentProfile = useMemo(() => getProfileForUser(currentUser), [currentUser]);
   const profileComplete = isInfluencerProfileComplete(currentProfile);
-  const influencerEmail = currentProfile.email || currentUser?.email || '';
-  const [contracts, setContracts] = useState(() => getContractsForInfluencer(influencerEmail));
+  const [contracts, setContracts] = useState([]);
   const [selectedContractId, setSelectedContractId] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [decisionLoading, setDecisionLoading] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (!profileComplete) {
@@ -54,27 +66,70 @@ export default function ContractsPage() {
   }, [profileComplete, navigate]);
 
   useEffect(() => {
-    setContracts(getContractsForInfluencer(influencerEmail));
-  }, [influencerEmail]);
+    if (!profileComplete) {
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const loadContracts = async () => {
+      const result = await getMyContracts();
+      if (!isMounted) {
+        return;
+      }
+
+      if (result.success) {
+        setContracts(result.contracts || []);
+        setErrorMessage('');
+      } else {
+        setErrorMessage(result.message || 'Contracts could not be loaded');
+      }
+      setIsLoading(false);
+    };
+
+    loadContracts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [profileComplete]);
 
   if (!profileComplete) {
     return null;
   }
 
   const selectedContract =
-    contracts.find((contract) => contract.contractId === selectedContractId) || null;
+    contracts.find((contract) =>
+      getContractKey(contract) === selectedContractId
+    ) || null;
 
-  const refreshContracts = () => {
-    setContracts(getContractsForInfluencer(influencerEmail));
-  };
-
-  const handleContractDecision = (contractId, status) => {
-    const updatedContract = updateContractStatus(contractId, status);
-    if (updatedContract) {
-      setSelectedContractId(updatedContract.contractId);
-      refreshContracts();
+  const handleContractDecision = async (contractId, status) => {
+    setDecisionLoading(`${contractId}:${status}`);
+    setErrorMessage('');
+    const result = await updateContractStatus(contractId, status);
+    if (result.success && result.contract) {
+      const updatedContract = result.contract;
+      const updatedKey = getContractKey(updatedContract);
+      setContracts((currentContracts) =>
+        currentContracts.map((contract) =>
+          getContractKey(contract) === contractId || getContractKey(contract) === updatedKey
+            ? { ...contract, ...updatedContract }
+            : contract
+        )
+      );
+      setSelectedContractId(updatedKey);
+    } else {
+      setErrorMessage(result.message || 'Contract status could not be updated');
     }
+    setDecisionLoading('');
   };
+
+  const renderContractField = (label, value) => (
+    <div className="contract-field">
+      <span className="contract-field-label">{label}</span>
+      <span className="contract-field-value">{formatFieldValue(value)}</span>
+    </div>
+  );
 
   const renderStatusBadge = (status) => (
     <span className={`status-badge status-${statusToneMap[status] || 'pending'}`}>
@@ -109,61 +164,53 @@ export default function ContractsPage() {
             </div>
           </div>
 
-          {contracts.length === 0 ? (
+          {isLoading ? (
+            <div className="content-card">
+              <h3>Loading contracts...</h3>
+            </div>
+          ) : errorMessage ? (
+            <div className="no-results">
+              <h3>Contracts could not be loaded</h3>
+              <p>{errorMessage}</p>
+            </div>
+          ) : contracts.length === 0 ? (
             <div className="no-results">
               <h3>No contracts yet</h3>
               <p>When a brand accepts your proposal and sends a contract, it will appear here.</p>
             </div>
           ) : (
-            <div className="applications-list">
+            <div className="contracts-list">
               {contracts.map((contract) => (
-                <article className="application-card" key={contract.contractId}>
-                  <div className="application-body">
-                    <div className="application-header">
-                      <div className="application-heading">
-                        <h3>{contract.campaignName}</h3>
-                        <p className="application-subtitle">{contract.brandName} | {contract.contractId}</p>
-                      </div>
-                      <div className="application-status">
-                        {renderStatusBadge(contract.status)}
-                      </div>
+                <article className="contract-card" key={getContractKey(contract)}>
+                  <div className="contract-card-header">
+                    <div className="contract-card-title">
+                      <p className="section-label">Contract</p>
+                      <h3>{contract.campaignName || emptyText}</h3>
+                      <p>{contract.brandName || emptyText}</p>
                     </div>
-
-                    <div className="application-content">
-                      <div className="application-stat-grid">
-                        <div className="application-stat-card">
-                          <span className="application-stat-label">Contract ID</span>
-                          <span className="application-stat-value">{contract.contractId}</span>
-                        </div>
-                        <div className="application-stat-card">
-                          <span className="application-stat-label">Value</span>
-                          <span className="application-stat-value">{contract.value || emptyText}</span>
-                        </div>
-                        <div className="application-stat-card">
-                          <span className="application-stat-label">Start</span>
-                          <span className="application-stat-value">{formatDate(contract.startDate)}</span>
-                        </div>
-                        <div className="application-stat-card">
-                          <span className="application-stat-label">End</span>
-                          <span className="application-stat-value">{formatDate(contract.endDate)}</span>
-                        </div>
-                      </div>
-
-                      <div className="application-meta">
-                        <span>Brand: {contract.brandName}</span>
-                        <span>Campaign: {contract.campaignName}</span>
-                        <span>Transaction Status: {contract.transactionStatus}</span>
-                      </div>
+                    <div className="contract-card-status">
+                      {renderStatusBadge(contract.status)}
                     </div>
+                  </div>
 
-                    <div className="application-actions">
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => setSelectedContractId(contract.contractId)}
-                      >
-                        View Contract
-                      </button>
-                    </div>
+                  <div className="contract-card-grid">
+                    {renderContractField('Contract ID', contract.contractId)}
+                    {renderContractField('Brand', contract.brandName)}
+                    {renderContractField('Campaign', contract.campaignName)}
+                    {renderContractField('Value', contract.value)}
+                    {renderContractField('Start', formatDate(contract.startDate))}
+                    {renderContractField('End', formatDate(contract.endDate))}
+                    {renderContractField('Status', contract.status)}
+                    {renderContractField('Transaction Status', contract.transactionStatus)}
+                  </div>
+
+                  <div className="contract-card-actions">
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setSelectedContractId(getContractKey(contract))}
+                    >
+                      View Contract
+                    </button>
                   </div>
                 </article>
               ))}
@@ -171,78 +218,67 @@ export default function ContractsPage() {
           )}
 
           {selectedContract && (
-            <div className="content-card campaign-overview-card">
-              <div className="campaign-overview-header">
+            <section className="contract-detail-card">
+              <div className="contract-detail-header">
                 <div>
                   <p className="section-label">Contract Details</p>
-                  <h3>{selectedContract.contractId}</h3>
-                  <p className="campaign-overview-subtitle">
-                    {selectedContract.brandName} | {selectedContract.campaignName}
-                  </p>
+                  <h3>{formatFieldValue(selectedContract.contractId)}</h3>
+                  <p>{formatFieldValue(selectedContract.brandName)} | {formatFieldValue(selectedContract.campaignName)}</p>
                 </div>
                 {renderStatusBadge(selectedContract.status)}
               </div>
 
-              <div className="campaign-meta">
-                <div className="meta-item">
-                  <span className="meta-label">Brand</span>
-                  <span className="meta-value">{selectedContract.brandName}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Influencer</span>
-                  <span className="meta-value">{selectedContract.influencerName}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Campaign</span>
-                  <span className="meta-value">{selectedContract.campaignName}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Value</span>
-                  <span className="meta-value">{selectedContract.value || emptyText}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Start</span>
-                  <span className="meta-value">{formatDate(selectedContract.startDate)}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">End</span>
-                  <span className="meta-value">{formatDate(selectedContract.endDate)}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Status</span>
-                  <span className="meta-value">{selectedContract.status}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Transaction Status</span>
-                  <span className="meta-value">{selectedContract.transactionStatus}</span>
-                </div>
+              <div className="contract-detail-grid">
+                {renderContractField('ID', selectedContract.contractId)}
+                {renderContractField('Brand', selectedContract.brandName)}
+                {renderContractField('Influencer', selectedContract.influencerName)}
+                {renderContractField('Campaign', selectedContract.campaignName)}
+                {renderContractField('Value', selectedContract.value)}
+                {renderContractField('Start', formatDate(selectedContract.startDate))}
+                {renderContractField('End', formatDate(selectedContract.endDate))}
+                {renderContractField('Status', selectedContract.status)}
+                {renderContractField('Transaction Status', selectedContract.transactionStatus)}
               </div>
 
-              <div className="application-message">
-                <h4>Details / Deliverables</h4>
-                <p>{selectedContract.details}</p>
-                <p>{selectedContract.deliverables || emptyText}</p>
+              <div className="contract-detail-section">
+                <h4>Details</h4>
+                <p>{selectedContract.details || emptyText}</p>
+              </div>
+
+              <div className="contract-detail-section">
+                <h4>Deliverables</h4>
+                {Array.isArray(selectedContract.deliverables) && selectedContract.deliverables.length > 0 ? (
+                  <ul className="contract-detail-list">
+                    {selectedContract.deliverables.map((deliverable, index) => (
+                      <li key={`${deliverable}-${index}`}>{deliverable}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>{emptyText}</p>
+                )}
               </div>
 
               {selectedContract.status === 'Pending' ? (
-                <div className="campaign-action-buttons">
+                <div className="contract-decision-actions">
                   <button
                     className="btn btn-primary"
-                    onClick={() => handleContractDecision(selectedContract.contractId, 'Active')}
+                    onClick={() => handleContractDecision(getContractKey(selectedContract), 'Active')}
+                    disabled={Boolean(decisionLoading)}
                   >
-                    Accept Contract
+                    {decisionLoading === `${getContractKey(selectedContract)}:Active` ? 'Accepting...' : 'Accept Contract'}
                   </button>
                   <button
                     className="btn btn-outline"
-                    onClick={() => handleContractDecision(selectedContract.contractId, 'Rejected')}
+                    onClick={() => handleContractDecision(getContractKey(selectedContract), 'Rejected')}
+                    disabled={Boolean(decisionLoading)}
                   >
-                    Reject Contract
+                    {decisionLoading === `${getContractKey(selectedContract)}:Rejected` ? 'Rejecting...' : 'Reject Contract'}
                   </button>
                 </div>
               ) : (
-                <p className="text-muted">Current contract status: {selectedContract.status}</p>
+                <p className="contract-current-status">Current contract status: {selectedContract.status}</p>
               )}
-            </div>
+            </section>
           )}
         </section>
       </div>

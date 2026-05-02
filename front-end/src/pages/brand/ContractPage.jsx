@@ -14,54 +14,85 @@ import {
   FiSend,
   FiX,
 } from "react-icons/fi";
-import SaraBImage from "../../assets/images/SaraBlogs-Profile.jpg";
-import LisaSImage from "../../assets/images/Lisa-Profile.jpg";
-import { getCampaignById } from "../../data/mockCampaigns";
-import { sendContractFromBrand } from "../../data/contracts";
+import { fetchCampaignById } from "../../data/mockCampaigns";
+import { getApplicationById } from "../../api/applications";
+import { createContract, getContractById } from "../../api/contracts";
 import BrandChatModal from "./BrandChatModal";
 
-const influencerProfiles = {
-  "sarah-johnson": {
-    name: "Sarah Johnson",
-    email: "sarah.johnson@email.com",
-    imageSrc: SaraBImage,
-  },
-  "mia-carter": {
-    name: "Mia Carter",
-    email: "mia.carter@email.com",
-    imageSrc: LisaSImage,
-  },
-};
-
-const generateContractId = () => {
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `CT-${timestamp}-${random}`;
-};
-
 const COMMISSION_RATE = 10;
+
+const CONTRACT_STATUSES = ["Completed", "Active", "Pending", "Rejected"];
+
+const normalizeContractState = (status) => {
+  if (!status) {
+    return "draft";
+  }
+
+  const value = String(status).trim();
+  if (value.toLowerCase() === "draft") {
+    return "draft";
+  }
+
+  const canonical = CONTRACT_STATUSES.find(
+    (item) => item.toLowerCase() === value.toLowerCase()
+  );
+  return canonical || "Pending";
+};
+
+const contractStateTone = {
+  Active: "accepted",
+  Completed: "accepted",
+  Pending: "pending",
+  Rejected: "rejected",
+  draft: "pending",
+};
+
+const toInputDate = (date) => {
+  if (!date) {
+    return "";
+  }
+
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return String(date).slice(0, 10);
+  }
+
+  return parsedDate.toISOString().slice(0, 10);
+};
+
+const splitContractDetails = (details) =>
+  String(details || "")
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
 export default function ContractPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const campaignId = searchParams.get("campaignId") || "spring-collection";
   const influencerId = searchParams.get("influencer") || "sarah-johnson";
+  const applicationId = searchParams.get("applicationId");
+  const existingContractId = searchParams.get("contractId");
+  const influencerNameParam = searchParams.get("influencerName");
+  const influencerEmailParam = searchParams.get("influencerEmail");
   const initialState = searchParams.get("state") || "draft";
 
-  const campaign = getCampaignById(campaignId);
-  const profile = influencerProfiles[influencerId] || influencerProfiles["sarah-johnson"];
+  const [campaign, setCampaign] = useState(null);
+  const [application, setApplication] = useState(null);
+  const [profile, setProfile] = useState({
+    name: "Influencer",
+    email: "",
+    imageSrc: "",
+  });
 
   const brandProfile = useMemo(() => {
     const stored = localStorage.getItem("brandProfile");
     return stored ? JSON.parse(stored) : { companyName: "Brand" };
   }, []);
 
-  const [contractId] = useState(() => {
-    const existing = searchParams.get("contractId");
-    return existing || generateContractId();
-  });
+  const [contractId, setContractId] = useState(searchParams.get("contractId") || "Assigned after send");
 
-  const [contractState, setContractState] = useState(initialState);
+  const [contractState, setContractState] = useState(normalizeContractState(initialState));
   const [bannerMessage, setBannerMessage] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
@@ -74,19 +105,117 @@ export default function ContractPage() {
   const [paymentTiming, setPaymentTiming] = useState("before");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const isDraft = contractState === "draft";
+  const normalizedContractState = normalizeContractState(contractState);
+  const isDraft = normalizedContractState === "draft";
 
   const totalAmount = parseFloat(String(contractValue).replace(/[^0-9.]/g, "")) || 0;
   const adminCut = (totalAmount * COMMISSION_RATE) / 100;
   const influencerCut = totalAmount - adminCut;
 
   useEffect(() => {
-    if (!searchParams.get("contractId")) {
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.set("contractId", contractId);
-      setSearchParams(nextParams, { replace: true });
-    }
-  }, [contractId, searchParams, setSearchParams]);
+    let isMounted = true;
+
+    const loadContractContext = async () => {
+      try {
+        if (existingContractId && existingContractId !== "Assigned after send") {
+          const contractResult = await getContractById(existingContractId);
+          if (!contractResult.success) {
+            throw new Error(contractResult.message || "Contract could not be loaded");
+          }
+
+          const contract = contractResult.contract;
+          const contractCampaign =
+            contract.campaign && typeof contract.campaign === "object"
+              ? contract.campaign
+              : contract.campaignId && typeof contract.campaignId === "object"
+                ? contract.campaignId
+                : null;
+
+          if (isMounted) {
+            setApplication(contract.application || null);
+            setCampaign(contractCampaign || { name: contract.campaignName || "Campaign" });
+            setProfile({
+              name: contract.influencerName || "Influencer",
+              email: contract.influencerEmail || "",
+              imageSrc: contract.influencerImage || "",
+            });
+            setContractId(contract.contractId || contract._id || existingContractId);
+            setContractState(normalizeContractState(contract.status));
+            setContractValue(contract.value || (contract.totalAmount ? String(contract.totalAmount) : ""));
+            setDuration(contract.duration || "");
+            setStartDate(toInputDate(contract.startDate));
+            setEndDate(toInputDate(contract.endDate));
+            setDeliverables(
+              Array.isArray(contract.deliverables) && contract.deliverables.length
+                ? contract.deliverables
+                : [""]
+            );
+            setCustomTerms(
+              Array.isArray(contract.terms) && contract.terms.length
+                ? contract.terms
+                : splitContractDetails(contract.details).length
+                  ? splitContractDetails(contract.details)
+                  : [""]
+            );
+            setPaymentTiming(contract.paymentTiming || "before");
+          }
+          return;
+        }
+
+        if (applicationId) {
+          const applicationResult = await getApplicationById(applicationId);
+          if (!applicationResult.success) {
+            throw new Error(applicationResult.message || "Application could not be loaded");
+          }
+
+          const nextApplication = applicationResult.application;
+          const appCampaign = nextApplication.campaignId && typeof nextApplication.campaignId === "object"
+            ? nextApplication.campaignId
+            : nextApplication.campaign && typeof nextApplication.campaign === "object"
+              ? nextApplication.campaign
+              : null;
+
+          if (isMounted) {
+            setApplication(nextApplication);
+            setCampaign(appCampaign || null);
+            setProfile({
+              name: nextApplication.influencerName || "Influencer",
+              email: nextApplication.influencerEmail || "",
+              imageSrc: nextApplication.influencerImage || "",
+            });
+          }
+
+          if (!appCampaign && nextApplication.campaignId) {
+            const loadedCampaign = await fetchCampaignById(nextApplication.campaignId);
+            if (isMounted) {
+              setCampaign(loadedCampaign);
+            }
+          }
+        } else {
+          const loadedCampaign = await fetchCampaignById(campaignId);
+          if (isMounted) {
+            setCampaign(loadedCampaign);
+            setProfile({
+              name: influencerNameParam || "Influencer",
+              email: influencerEmailParam || "",
+              imageSrc: "",
+            });
+          }
+        }
+
+      } catch (err) {
+        if (isMounted) {
+          setErrorMessage(err.message || "Contract context could not be loaded");
+        }
+      }
+    };
+
+    loadContractContext();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [applicationId, campaignId, existingContractId, influencerNameParam, influencerEmailParam]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -130,7 +259,7 @@ export default function ContractPage() {
     return null;
   };
 
-  const handleRequestContract = () => {
+  const handleRequestContract = async () => {
     const validationError = validateContract();
     if (validationError) {
       setErrorMessage(validationError);
@@ -138,20 +267,45 @@ export default function ContractPage() {
     }
     setErrorMessage("");
 
-    sendContractFromBrand({
-      campaign,
-      influencer: { id: influencerId, name: profile.name, email: profile.email },
+    const result = await createContract({
+      applicationId: application?._id || applicationId,
+      campaignId: campaign?._id || campaign?.id || campaignId,
+      influencerId,
+      value: `SAR ${totalAmount}`,
+      totalAmount,
+      startDate,
+      endDate,
+      duration,
+      details: customTerms.filter((item) => item.trim()).join('\n'),
+      deliverables: deliverables.filter((item) => item.trim()),
+      terms: customTerms.filter((item) => item.trim()),
+      paymentTiming,
+      transactionStatus: "Pending",
     });
 
-    setContractState("pending");
+    if (!result.success && !result.contract) {
+      setErrorMessage(result.message || "Contract could not be sent");
+      return;
+    }
+
+    const savedContract = result.contract;
+    if (savedContract?.contractId) {
+      setContractId(savedContract.contractId);
+    }
+    setContractState(normalizeContractState(savedContract?.status || "Pending"));
     setBannerMessage({
       type: "success",
-      title: "Contract request sent!",
-      text: `Waiting for ${profile.name}'s approval`,
+      title: result.success ? "Contract request sent!" : "Contract already exists",
+      text: result.success
+        ? `Waiting for ${profile.name}'s approval`
+        : result.message || `Waiting for ${profile.name}'s approval`,
     });
 
     const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("state", "pending");
+    nextParams.set("state", savedContract?.status || "Pending");
+    if (savedContract?.contractId) {
+      nextParams.set("contractId", savedContract.contractId);
+    }
     setSearchParams(nextParams);
   };
 
@@ -171,9 +325,20 @@ export default function ContractPage() {
     });
   };
 
-  const stateBadge = isDraft
-    ? { label: "Draft", className: "pending" }
-    : { label: "Pending", className: "pending" };
+  const stateBadge = {
+    label: isDraft ? "Draft" : normalizedContractState,
+    className: contractStateTone[normalizedContractState] || "pending",
+  };
+  const actionSummaryTitle = isDraft
+    ? "Draft contract"
+    : normalizedContractState === "Pending"
+      ? `Waiting for ${profile.name}'s approval`
+      : `Contract ${normalizedContractState}`;
+  const actionSummaryText = isDraft
+    ? "Fill in the contract details and send it to the influencer."
+    : normalizedContractState === "Pending"
+      ? "The digital contract has been sent. The influencer will review and respond."
+      : `The latest saved contract status is ${normalizedContractState}.`;
 
   return (
     <div className="dashboard-page campaign-review-page">
@@ -459,10 +624,8 @@ export default function ContractPage() {
           <div className="contract-actions-panel">
             <div className="contract-actions-summary">
               {isDraft ? <FiFileText /> : <FiSend />}
-              <strong>{isDraft ? "Draft contract" : `Waiting for ${profile.name}'s approval`}</strong>
-              <p>{isDraft
-                ? "Fill in the contract details and send it to the influencer."
-                : "The digital contract has been sent. The influencer will review and respond."}</p>
+              <strong>{actionSummaryTitle}</strong>
+              <p>{actionSummaryText}</p>
             </div>
 
             <div className="contract-actions-row">

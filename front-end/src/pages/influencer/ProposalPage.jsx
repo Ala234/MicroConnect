@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
-import { getCampaignById } from '../../data/mockCampaigns';
+import { fetchCampaignById } from '../../data/mockCampaigns';
+import { applyToCampaign } from '../../api/applications';
 import {
+  getCurrentUser,
   getProfileForUser,
   isInfluencerProfileComplete,
-  saveInfluencerApplication,
 } from '../../data/influencerAccounts';
 import '../../styles/influencer.css';
 
@@ -13,22 +14,64 @@ export default function ProposalPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
+  const currentUser = getCurrentUser();
+  const influencerProfile = getProfileForUser(currentUser);
+  const [campaign, setCampaign] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [proposal, setProposal] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const campaign = getCampaignById(id);
   const campaignBrandName = campaign?.brandName || campaign?.brand || 'Brand';
   const returnTo = location.state?.returnTo || `/influencer/campaign/${id}`;
-  const profileComplete = isInfluencerProfileComplete(getProfileForUser());
+  const profileComplete = isInfluencerProfileComplete(influencerProfile);
 
   useEffect(() => {
     if (!profileComplete) {
       navigate('/influencer/setup');
+      return;
     }
-  }, [profileComplete, navigate]);
+
+    let isMounted = true;
+
+    const loadCampaign = async () => {
+      setIsLoading(true);
+      try {
+        const campaignData = await fetchCampaignById(id);
+        if (isMounted) {
+          setCampaign(campaignData);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadCampaign();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, profileComplete, navigate]);
 
   if (!profileComplete) {
     return null;
+  }
+
+  if (isLoading) {
+    return (
+      <main className="influencer-page dashboard-page">
+        <div className="dashboard-shell influencer-shell">
+          <section className="campaigns-section padded-top">
+            <div className="content-card">
+              <h3>Loading campaign...</h3>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
   }
 
   if (!campaign) {
@@ -62,23 +105,30 @@ export default function ProposalPage() {
     );
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (proposal.trim()) {
-      saveInfluencerApplication({
-        campaign: campaign.id,
-        campaignId: campaign.id,
-        campaignName: campaign.name,
-        brandName: campaignBrandName,
-        proposal: proposal.trim(),
-        status: 'Pending',
-        statusTone: 'pending',
-        appliedDate: new Date().toISOString().slice(0, 10),
-        brandResponse: '',
+      setIsSubmitting(true);
+      setErrorMessage('');
+      const result = await applyToCampaign(id, proposal.trim(), {
+        profileImage: influencerProfile.profileImage,
+        followers: influencerProfile.followers,
+        engagement: influencerProfile.engagement,
+        age: influencerProfile.audience?.age || '',
+        location: influencerProfile.location,
+        categories: influencerProfile.categories,
       });
+
+      if (!result.success) {
+        setErrorMessage(result.message || 'Failed to submit proposal');
+        setIsSubmitting(false);
+        return;
+      }
+
       setIsSubmitted(true);
       setTimeout(() => {
         navigate('/influencer/applications');
       }, 2000);
+      setIsSubmitting(false);
     }
   };
 
@@ -128,6 +178,11 @@ export default function ProposalPage() {
                 </div>
 
                 <div className="proposal-form-content">
+                  {errorMessage && (
+                    <div className="form-error-summary">
+                      {errorMessage}
+                    </div>
+                  )}
                   <div className="form-group proposal-form-group">
                     <label htmlFor="proposal">Your Proposal</label>
                     <textarea
@@ -148,9 +203,9 @@ export default function ProposalPage() {
                   <button
                     className="btn btn-primary"
                     onClick={handleSubmit}
-                    disabled={!proposal.trim()}
+                    disabled={!proposal.trim() || isSubmitting}
                   >
-                    Submit Proposal
+                    {isSubmitting ? 'Submitting...' : 'Submit Proposal'}
                   </button>
                 </div>
               </div>

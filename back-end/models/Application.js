@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 
 const applicationSchema = new mongoose.Schema(
   {
+    campaign: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Campaign',
+    },
     campaignId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Campaign',
@@ -10,6 +14,22 @@ const applicationSchema = new mongoose.Schema(
     campaignName: {
       type: String,
       required: true,
+    },
+    brand: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    brandId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    brandName: {
+      type: String,
+      default: '',
+    },
+    influencer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
     influencerId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -54,8 +74,16 @@ const applicationSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'accepted', 'rejected'],
+      enum: ['pending', 'accepted', 'rejected', 'Pending', 'Under Review', 'Accepted', 'Rejected'],
       default: 'pending',
+    },
+    statusTone: {
+      type: String,
+      default: 'pending',
+    },
+    appliedDate: {
+      type: String,
+      default: '',
     },
     brandResponse: {
       type: String,
@@ -67,5 +95,35 @@ const applicationSchema = new mongoose.Schema(
 
 // Prevent duplicate applications
 applicationSchema.index({ campaignId: 1, influencerId: 1 }, { unique: true });
+
+applicationSchema.pre('validate', function syncApplicationAliases() {
+  if (!this.campaign && this.campaignId) {
+    this.campaign = this.campaignId;
+  }
+
+  if (!this.campaignId && this.campaign) {
+    this.campaignId = this.campaign;
+  }
+
+  if (!this.brand && this.brandId) {
+    this.brand = this.brandId;
+  }
+
+  if (!this.brandId && this.brand) {
+    this.brandId = this.brand;
+  }
+
+  if (!this.influencer && this.influencerId) {
+    this.influencer = this.influencerId;
+  }
+
+  if (!this.influencerId && this.influencer) {
+    this.influencerId = this.influencer;
+  }
+
+  if (!this.appliedDate && this.createdAt) {
+    this.appliedDate = this.createdAt.toISOString().slice(0, 10);
+  }
+});
 
 module.exports = mongoose.model('Application', applicationSchema);

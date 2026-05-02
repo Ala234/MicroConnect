@@ -1,5 +1,5 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace(/\/$/, "");
-const API_URL = `${API_BASE_URL}/applications`;
+const API_URL = `${API_BASE_URL}/contracts`;
 
 const getToken = () => localStorage.getItem("token");
 
@@ -24,10 +24,7 @@ const readJson = async (res) => {
     return {
       ...data,
       success: false,
-      message:
-        data.message === "You already applied to this campaign"
-          ? "You already applied to this campaign. View it in My Applications."
-          : data.message || `Request failed with status ${res.status}`,
+      message: data.message || `Request failed with status ${res.status}`,
     };
   }
 
@@ -43,46 +40,50 @@ const request = async (url, options = {}) => {
   }
 };
 
-export const applyToCampaign = async (campaignId, proposal, influencerData) =>
+export const createContract = async (contractData) =>
   request(API_URL, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify({ campaignId, proposal, influencerData }),
+    body: JSON.stringify(contractData),
   });
 
-export const getApplications = async () =>
+export const getContracts = async () =>
   request(API_URL, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
 
-export const getApplicationsForCampaign = async (campaignId) =>
-  request(`${API_URL}/campaign/${campaignId}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-
-export const getApplicationsForInfluencer = async (influencerIdOrEmail) =>
-  request(`${API_URL}/influencer/${encodeURIComponent(influencerIdOrEmail)}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-
-export const getApplicationsForBrand = async (brandId) =>
-  request(`${API_URL}/brand/${encodeURIComponent(brandId)}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-
-export const getApplicationById = async (applicationId) =>
-  request(`${API_URL}/${applicationId}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-
-export const getMyApplications = async () =>
+export const getMyContracts = async () =>
   request(`${API_URL}/my`, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
 
-export const updateApplicationStatus = async (applicationId, status, brandResponse = "") =>
-  request(`${API_URL}/${applicationId}/status`, {
+export const getContractsForInfluencer = async (influencerIdOrEmail) =>
+  request(`${API_URL}/influencer/${encodeURIComponent(influencerIdOrEmail)}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+
+export const getContractsForBrand = async (brandId) =>
+  request(`${API_URL}/brand/${encodeURIComponent(brandId)}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+
+export const getContractById = async (contractId) =>
+  request(`${API_URL}/${encodeURIComponent(contractId)}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+
+export const updateContractStatus = async (contractId, status) =>
+  request(`${API_URL}/${encodeURIComponent(contractId)}/status`, {
     method: "PUT",
     headers: authHeaders(),
-    body: JSON.stringify({ status, brandResponse }),
+    body: JSON.stringify({ status }),
   });
+
+export const getPendingContractCount = async () => {
+  const result = await getMyContracts();
+  if (!result.success) {
+    return 0;
+  }
+
+  return (result.contracts || []).filter((contract) => contract.status === "Pending").length;
+};

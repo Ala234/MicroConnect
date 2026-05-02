@@ -1,10 +1,31 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentUser } from '../../data/influencerAccounts';
-import { getPendingContractCountForInfluencer } from '../../data/contracts';
+import { getPendingContractCount } from '../../api/contracts';
 
 export default function InfluencerTopNav({ active }) {
   const navigate = useNavigate();
-  const pendingContracts = getPendingContractCountForInfluencer(getCurrentUser());
+  const [pendingContracts, setPendingContracts] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getPendingContractCount()
+      .then((count) => {
+        if (isMounted) {
+          setPendingContracts(count);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setPendingContracts(0);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const contractsLabel = pendingContracts > 0
     ? `Contracts (${pendingContracts})`
     : 'Contracts';

@@ -65,16 +65,16 @@ export default function Contracts() {
 
   // ── Stats (derived from real data) ────────────────────
   const total     = contracts.length;
-  const active    = contracts.filter((c) => c.status === "accepted").length;
-  const pending   = contracts.filter((c) => c.status === "pending").length;
-  const completed = contracts.filter((c) => c.status === "completed").length;
+  const active    = contracts.filter((c) => c.status === "Active").length;
+  const pending   = contracts.filter((c) => c.status === "Pending").length;
+  const completed = contracts.filter((c) => c.status === "Completed").length;
 
   // ── Filtering ──────────────────────────────────────────
   const filtered = useMemo(() => {
     return contracts.filter((c) => {
-      const brand      = c.brandId?.companyName  || "";
-      const influencer = c.influencerId?.name    || "";
-      const campaign   = c.campaignId?.title     || "";
+      const brand      = c.brandName || c.brand?.name || c.brandId?.companyName || c.brandId?.name || "";
+      const influencer = c.influencerName || c.influencer?.name || c.influencerId?.name || "";
+      const campaign   = c.campaignName || c.campaign?.name || c.campaign?.title || c.campaignId?.name || c.campaignId?.title || "";
 
       const matchSearch =
         c.contractId?.toLowerCase().includes(search.toLowerCase()) ||
@@ -99,12 +99,10 @@ export default function Contracts() {
   // ── Helpers ────────────────────────────────────────────
   const statusClass = (status) => {
     switch (status) {
-      case "accepted":  return "status-accepted";
-      case "completed": return "status-completed";
-      case "pending":   return "status-pending";
-      case "rejected":  return "status-deleted";
-      case "cancelled": return "status-deleted";
-      case "draft":     return "status-suspended";
+      case "Active":    return "status-accepted";
+      case "Completed": return "status-completed";
+      case "Pending":   return "status-pending";
+      case "Rejected":  return "status-deleted";
       default:          return "";
     }
   };
@@ -191,9 +189,9 @@ export default function Contracts() {
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                   >
-                    {["All", "draft", "pending", "accepted", "completed", "rejected", "cancelled"].map((s) => (
+                    {["All", "Pending", "Active", "Completed", "Rejected"].map((s) => (
                       <option key={s} value={s}>
-                        {s === "All" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)}
+                        {s === "All" ? "All Statuses" : s}
                       </option>
                     ))}
                   </select>
@@ -238,20 +236,20 @@ export default function Contracts() {
                           <tr key={contract._id}>
                             <td>{(page - 1) * CONTRACTS_PER_PAGE + index + 1}</td>
                             <td className="txn-id">{contract.contractId}</td>
-                            <td>{contract.brandId?.companyName  || "—"}</td>
-                            <td>{contract.influencerId?.name    || "—"}</td>
-                            <td>{contract.campaignId?.title     || "—"}</td>
+                            <td>{contract.brandName || contract.brand?.name || contract.brandId?.companyName || contract.brandId?.name || "—"}</td>
+                            <td>{contract.influencerName || contract.influencer?.name || contract.influencerId?.name || "—"}</td>
+                            <td>{contract.campaignName || contract.campaign?.name || contract.campaign?.title || contract.campaignId?.name || contract.campaignId?.title || "—"}</td>
                             <td className="txn-amount">
-                              SAR {contract.totalAmount?.toLocaleString() || "—"}
+                              {contract.value || (contract.totalAmount ? `SAR ${contract.totalAmount.toLocaleString()}` : "—")}
                             </td>
                             <td className="txn-date">{contract.commissionRate}%</td>
                             <td className="txn-date">{formatDate(contract.startDate)}</td>
                             <td className="txn-date">{formatDate(contract.endDate)}</td>
-                            <td className={contract.paymentStatus === "paid" ? "status-resolved" : "status-pending"}>
-                              {contract.paymentStatus === "paid" ? "Paid" : "Unpaid"}
+                            <td className={contract.transactionStatus === "Completed" ? "status-resolved" : "status-pending"}>
+                              {contract.transactionStatus || "Pending"}
                             </td>
                             <td className={statusClass(contract.status)}>
-                              {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
+                              {contract.status}
                             </td>
                             <td
                               className="action-cell"

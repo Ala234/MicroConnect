@@ -20,6 +20,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/influencers', require('./routes/influencerRoutes'));
 app.use('/api/campaigns', require('./routes/campaignRoutes'));
 app.use('/api/applications', require('./routes/applicationRoutes'));
+app.use('/api/contracts', require('./routes/contractRoutes'));
 
 
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');

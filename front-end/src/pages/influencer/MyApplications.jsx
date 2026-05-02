@@ -39,6 +39,7 @@ export default function MyApplications() {
   const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
   const profileComplete = isInfluencerProfileComplete(getProfileForUser());
@@ -54,10 +55,17 @@ export default function MyApplications() {
       try {
         const result = await getMyApplications();
         if (result.success) {
-          setApplications(result.applications || []);
+          setApplications((result.applications || []).map((application) => ({
+            ...application,
+            status: String(application.status || 'pending').toLowerCase(),
+          })));
+          setErrorMessage('');
+        } else {
+          setErrorMessage(result.message || 'Applications could not be loaded');
         }
       } catch (err) {
         console.error('Failed to load applications:', err);
+        setErrorMessage(err.message || 'Applications could not be loaded');
       } finally {
         setIsLoading(false);
       }
@@ -141,6 +149,14 @@ export default function MyApplications() {
             <div className="content-card">
               <h3>Loading your applications...</h3>
             </div>
+          ) : errorMessage ? (
+            <div className="no-results">
+              <h3>Applications could not be loaded</h3>
+              <p>{errorMessage}</p>
+              <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                Try Again
+              </button>
+            </div>
           ) : filteredApplications.length === 0 ? (
             <div className="no-results">
               <h3>No applications yet</h3>
@@ -159,15 +175,23 @@ export default function MyApplications() {
             <div className="my-applications-list">
               {filteredApplications.map((app) => {
                 const config = statusConfig[app.status] || statusConfig.pending;
+                const campaignRecord = app.campaignId && typeof app.campaignId === 'object'
+                  ? app.campaignId
+                  : app.campaign && typeof app.campaign === 'object'
+                    ? app.campaign
+                    : null;
+                const campaignId = campaignRecord?._id || app.campaignId || app.campaign;
+                const campaignName = app.campaignName || campaignRecord?.name || 'Campaign';
+                const brandName = campaignRecord?.brandName || app.brandName || 'Brand';
 
                 return (
                   <div className="application-card-new" key={app._id}>
                     <div className="application-card-header">
                       <div>
-                        <h3 style={{ color: 'white', margin: '0 0 6px 0' }}>{app.campaignName}</h3>
+                        <h3 style={{ color: 'white', margin: '0 0 6px 0' }}>{campaignName}</h3>
                         <p style={{ color: '#9aa8d2', fontSize: 13, margin: 0 }}>
-                          Applied on{' '}
-                          {new Date(app.createdAt).toLocaleDateString('en-US', {
+                          {brandName} | Applied on{' '}
+                          {new Date(app.createdAt || app.appliedDate).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric',
@@ -217,7 +241,7 @@ export default function MyApplications() {
                     <div className="application-actions">
                       <button
                         className="btn btn-secondary"
-                        onClick={() => navigate(`/influencer/campaign/${app.campaignId}`)}
+                        onClick={() => navigate(`/influencer/campaign/${campaignId}`)}
                       >
                         View Campaign
                       </button>

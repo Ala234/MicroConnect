@@ -477,9 +477,12 @@ const getAllContracts = async (req, res) => {
     ];
 
     const contracts = await Contract.find(filter)
-      .populate('brandId',      'companyName')
-      .populate('influencerId', 'name')
-      .populate('campaignId',   'title')
+      .populate('brand',        'name email')
+      .populate('brandId',      'name email companyName')
+      .populate('influencer',   'name email')
+      .populate('influencerId', 'name email')
+      .populate('campaign',     'name title')
+      .populate('campaignId',   'name title')
       .sort({ createdAt: -1 });
 
     res.status(200).json(contracts);
@@ -492,9 +495,12 @@ const getAllContracts = async (req, res) => {
 const getContractById = async (req, res) => {
   try {
     const contract = await Contract.findById(req.params.id)
-      .populate('brandId',      'companyName')
+      .populate('brand',        'name email')
+      .populate('brandId',      'name email companyName')
+      .populate('influencer',   'name email')
       .populate('influencerId', 'name email')
-      .populate('campaignId',   'title');
+      .populate('campaign',     'name title')
+      .populate('campaignId',   'name title');
 
     if (!contract) return res.status(404).json({ message: 'Contract not found' });
     res.status(200).json(contract);
