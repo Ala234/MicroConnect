@@ -72,7 +72,6 @@ export default function CreateCampaign() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setErrorMessage("Image size must be less than 5MB");
       return;
@@ -143,8 +142,8 @@ export default function CreateCampaign() {
           <div className="dashboard-logo">
             <button
               className="back-btn"
-              onClick={() => navigate("/brand")}
-              aria-label="Back to dashboard"
+              onClick={() => navigate(-1)}
+              aria-label="Back"
               type="button"
             >
               ←
