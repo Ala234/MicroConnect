@@ -22,6 +22,11 @@ const {
   updateInfluencerBioStatus,
   getAllInfluencers,
   getAdminProfile,
+  updateAdminProfile,
+  getAllDisputes,
+  resolveDispute,
+  getDisputeStats,
+  getDisputeById,
   updateAdminProfile
 } = require('../controllers/adminController');
 
@@ -66,6 +71,15 @@ router.get('/commission', getCommission);
 router.put('/commission', updateCommission);
 
 
+// ── ContentReview ───────────────────────────────────────────
+router.patch('/influencers/:id/bio-status', updateInfluencerBioStatus);
+router.get('/influencers', getAllInfluencers);
+
+// ── DISPUTES ───────────────────────────────────────────
+router.get  ('/disputes',              getAllDisputes);
+router.get  ('/disputes/stats',        getDisputeStats);
+router.patch('/disputes/:id/resolve',  resolveDispute);
+router.get  ('/disputes/:id',          getDisputeById);
 // router.get   ('/content',                getAllContent);
 // router.patch ('/content/:id/approve',    approveContent);
 // router.patch ('/content/:id/flag',       flagContent);
@@ -75,8 +89,6 @@ router.get('/influencers', getAllInfluencers);
 
 // ── TODO (no models yet) ───────────────────────────────
 // router.get   ('/contracts',              getAllContracts);
-// router.get   ('/disputes',               getAllDisputes);
-// router.patch ('/disputes/:id/resolve',   resolveDispute);
 // router.get   ('/transactions',           getAllTransactions);
 
 module.exports = router;

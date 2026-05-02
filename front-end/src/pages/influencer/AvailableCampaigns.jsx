@@ -2,13 +2,23 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
 import { getCampaigns } from '../../data/mockCampaigns';
-import { getProfileForUser, isInfluencerProfileComplete } from '../../data/influencerAccounts';
+import { getCurrentUser, getProfileForUser, isInfluencerProfileComplete } from '../../data/influencerAccounts';
 import '../../styles/influencer.css';
+
+const getProfileImage = (profile = {}) =>
+  profile.profileImage || profile.image || profile.avatar || profile.profileImageUrl || '';
+
+const getProfileInitial = (name = '') =>
+  (name.trim().charAt(0) || 'I').toUpperCase();
 
 export default function AvailableCampaigns() {
   const navigate = useNavigate();
   const campaigns = getCampaigns().filter((campaign) => campaign.id !== 'summer-collection');
-  const profileComplete = isInfluencerProfileComplete(getProfileForUser());
+  const currentUser = getCurrentUser();
+  const influencerProfile = getProfileForUser(currentUser);
+  const profileComplete = isInfluencerProfileComplete(influencerProfile);
+  const influencerName = influencerProfile.name || currentUser?.name || 'Influencer';
+  const influencerImage = getProfileImage(influencerProfile);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [budgetFilter, setBudgetFilter] = useState('');
@@ -115,10 +125,17 @@ export default function AvailableCampaigns() {
       </header>
 
       <section className="campaigns-dashboard-banner">
+        <div className="campaigns-dashboard-avatar" aria-hidden="true">
+          {influencerImage ? (
+            <img src={influencerImage} alt="" />
+          ) : (
+            <span>{getProfileInitial(influencerName)}</span>
+          )}
+        </div>
         <div className="campaigns-dashboard-copy">
-          <h1>Campaigns Dashboard</h1>
+          <h1>Welcome, {influencerName}</h1>
           <p className="campaigns-dashboard-subtitle">
-            Review open brand opportunities, filter campaigns quickly, and focus on the partnerships that fit your audience best.
+            Review open brand opportunities, filter campaigns quickly, and focus on partnerships that fit your audience best.
           </p>
         </div>
       </section>
