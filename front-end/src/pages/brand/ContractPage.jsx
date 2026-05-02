@@ -66,6 +66,20 @@ const splitContractDetails = (details) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
+const getInputAmount = (value) => {
+  const amount = Number.parseFloat(String(value || "").replace(/[^0-9.]/g, ""));
+  return Number.isFinite(amount) && amount > 0 ? String(amount) : "";
+};
+
+const getDurationLabel = (startDate, endDate) => {
+  if (!startDate || !endDate) return "";
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffInDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+  if (Number.isNaN(diffInDays) || diffInDays < 0) return "";
+  return `${diffInDays} days`;
+};
+
 export default function ContractPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -105,6 +119,7 @@ export default function ContractPage() {
   const [paymentTiming, setPaymentTiming] = useState("before");
   const [errorMessage, setErrorMessage] = useState("");
   const [isRefreshingContract, setIsRefreshingContract] = useState(false);
+  const [transactionStatus, setTransactionStatus] = useState("Pending");
 
   const normalizedContractState = normalizeContractState(contractState);
   const isDraft = normalizedContractState === "draft";
@@ -130,6 +145,7 @@ export default function ContractPage() {
     });
     setContractId(contract.contractId || contract._id || fallbackContractId);
     setContractState(normalizeContractState(contract.status));
+    setTransactionStatus(contract.transactionStatus || "Pending");
     setContractValue(contract.value || (contract.totalAmount ? String(contract.totalAmount) : ""));
     setDuration(contract.duration || "");
     setStartDate(toInputDate(contract.startDate));
@@ -147,6 +163,20 @@ export default function ContractPage() {
           : [""]
     );
     setPaymentTiming(contract.paymentTiming || "before");
+  }, []);
+
+  const applyCampaignDefaults = useCallback((campaignRecord) => {
+    if (!campaignRecord) return;
+
+    setContractValue((current) => current || getInputAmount(campaignRecord.budget));
+    setStartDate((current) => current || toInputDate(campaignRecord.startDate));
+    setEndDate((current) => current || toInputDate(campaignRecord.endDate));
+    setDuration((current) => current || getDurationLabel(campaignRecord.startDate, campaignRecord.endDate));
+    setDeliverables((current) =>
+      current.some((item) => item.trim())
+        ? current
+        : [campaignRecord.contentType, ...(campaignRecord.platforms || [])].filter(Boolean)
+    );
   }, []);
 
   const refreshContractStatus = useCallback(async ({ showLoading = false } = {}) => {
@@ -211,18 +241,21 @@ export default function ContractPage() {
               email: nextApplication.influencerEmail || "",
               imageSrc: nextApplication.influencerImage || "",
             });
+            applyCampaignDefaults(appCampaign);
           }
 
           if (!appCampaign && nextApplication.campaignId) {
             const loadedCampaign = await fetchCampaignById(nextApplication.campaignId);
             if (isMounted) {
               setCampaign(loadedCampaign);
+              applyCampaignDefaults(loadedCampaign);
             }
           }
         } else {
           const loadedCampaign = await fetchCampaignById(campaignId);
           if (isMounted) {
             setCampaign(loadedCampaign);
+            applyCampaignDefaults(loadedCampaign);
             setProfile({
               name: influencerNameParam || "Influencer",
               email: influencerEmailParam || "",
@@ -252,7 +285,7 @@ export default function ContractPage() {
       isMounted = false;
       window.removeEventListener("focus", handleFocus);
     };
-  }, [applicationId, campaignId, existingContractId, influencerNameParam, influencerEmailParam, applyContractToState, refreshContractStatus]);
+  }, [applicationId, campaignId, existingContractId, influencerNameParam, influencerEmailParam, applyCampaignDefaults, applyContractToState, refreshContractStatus]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -326,13 +359,12 @@ export default function ContractPage() {
     }
 
     const savedContract = result.contract;
-    if (savedContract?.contractId) {
-      setContractId(savedContract.contractId);
+    if (savedContract) {
+      applyContractToState(savedContract, savedContract.contractId || savedContract._id || savedContract.id);
     }
-    setContractState(normalizeContractState(savedContract?.status || "Pending"));
     setBannerMessage({
       type: "success",
-      title: result.success ? "Contract request sent!" : "Contract already exists",
+      title: result.success ? "Contract sent!" : "Contract already exists",
       text: result.success
         ? `Waiting for ${profile.name}'s approval`
         : result.message || `Waiting for ${profile.name}'s approval`,
@@ -366,6 +398,8 @@ export default function ContractPage() {
     label: isDraft ? "Draft" : normalizedContractState,
     className: contractStateTone[normalizedContractState] || "pending",
   };
+  const displayContractStatus = isDraft ? "Pending" : normalizedContractState;
+  const displayTransactionStatus = transactionStatus || "Pending";
   const actionSummaryTitle = isDraft
     ? "Draft contract"
     : normalizedContractState === "Pending"
@@ -435,6 +469,21 @@ export default function ContractPage() {
                 <img src={profile.imageSrc} alt={profile.name} />
                 <strong>{profile.name}</strong>
               </div>
+            </div>
+          </div>
+
+          <div className="contract-party-grid">
+            <div className="contract-party-card">
+              <span>ID</span>
+              <strong>{contractId}</strong>
+            </div>
+            <div className="contract-party-card">
+              <span>Status</span>
+              <strong>{displayContractStatus}</strong>
+            </div>
+            <div className="contract-party-card">
+              <span>Transaction Status</span>
+              <strong>{displayTransactionStatus}</strong>
             </div>
           </div>
 
@@ -681,7 +730,7 @@ export default function ContractPage() {
                 </>
               ) : (
                 <button className="dashboard-primary-btn request-contract-btn" onClick={handleRequestContract}>
-                  <FiSend /><span>Request contract</span>
+                  <FiSend /><span>Send Contract</span>
                 </button>
               )}
             </div>

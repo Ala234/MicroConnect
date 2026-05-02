@@ -14,6 +14,15 @@ const parseAmount = (value) => {
   return Number.isFinite(amount) ? amount : 0;
 };
 
+const parseRequiredDate = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 const normalizeStringArray = (value) => {
   if (Array.isArray(value)) {
     return value.map((item) => String(item).trim()).filter(Boolean);
@@ -207,8 +216,27 @@ exports.createContract = async (req, res) => {
       }
     }
 
-    const contractValue = value || (totalAmount ? `SAR ${totalAmount}` : selectedCampaign.budget || '');
+    const contractValue = value || (totalAmount ? `SAR ${totalAmount}` : '');
     const amount = parseAmount(contractValue || totalAmount);
+    const contractStartDate = parseRequiredDate(startDate);
+    const contractEndDate = parseRequiredDate(endDate);
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Contract value is required' });
+    }
+
+    if (!contractStartDate) {
+      return res.status(400).json({ success: false, message: 'Valid startDate is required' });
+    }
+
+    if (!contractEndDate) {
+      return res.status(400).json({ success: false, message: 'Valid endDate is required' });
+    }
+
+    if (contractEndDate < contractStartDate) {
+      return res.status(400).json({ success: false, message: 'endDate must be after startDate' });
+    }
+
     const selectedInfluencerUser =
       selectedApplication?.influencerId && typeof selectedApplication.influencerId === 'object'
         ? selectedApplication.influencerId
@@ -231,8 +259,8 @@ exports.createContract = async (req, res) => {
       application: selectedApplication?._id,
       value: contractValue,
       totalAmount: amount,
-      startDate: startDate || selectedCampaign.startDate || undefined,
-      endDate: endDate || selectedCampaign.endDate || undefined,
+      startDate: contractStartDate,
+      endDate: contractEndDate,
       duration: duration || '',
       details: details || 'Contract details and deliverables will be managed by the brand and influencer.',
       deliverables: normalizeStringArray(deliverables),

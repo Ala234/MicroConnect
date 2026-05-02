@@ -15,7 +15,6 @@ import {
 } from "react-icons/fi";
 import { deleteCampaignById, fetchCampaignById } from "../../data/mockCampaigns";
 import { getApplicationsForCampaign, updateApplicationStatus } from "../../api/applications";
-import { createContract } from "../../api/contracts";
 import BrandChatModal from "./BrandChatModal";
 
 const getNumericValue = (value) => Number.parseFloat(String(value).replace(/[^0-9.]/g, "")) || 0;
@@ -125,39 +124,13 @@ export default function DeleteCampaign() {
         )
       );
 
-      const contractResult = await createContract({
-        applicationId: updatedApplication._id,
+      const nextParams = new URLSearchParams({
         campaignId,
-        influencerId: getRecordId(updatedApplication.influencerId || updatedApplication.influencer),
-        value: campaign?.budget ? `SAR ${campaign.budget}` : "",
-        totalAmount: getNumericValue(campaign?.budget),
-        startDate: campaign?.startDate,
-        endDate: campaign?.endDate,
-        duration: getDurationLabel(campaign?.startDate, campaign?.endDate),
-        details: "Contract generated after the brand accepted this application.",
-        deliverables: [campaign?.contentType, ...(campaign?.platforms || [])].filter(Boolean),
-        terms: ["Contract terms will be managed by the brand and influencer."],
-        paymentTiming: "before",
-        transactionStatus: "Pending",
+        influencer: getRecordId(updatedApplication.influencerId || updatedApplication.influencer),
+        applicationId: updatedApplication._id,
+        state: "draft",
       });
-
-      if (contractResult.success || contractResult.contract) {
-        const contract = contractResult.contract;
-        const nextParams = new URLSearchParams({
-          campaignId,
-          influencer: getRecordId(updatedApplication.influencerId || updatedApplication.influencer),
-          applicationId: updatedApplication._id,
-          state: contract?.status || "Pending",
-        });
-        if (contract?.contractId || contract?._id || contract?.id) {
-          nextParams.set("contractId", contract.contractId || contract._id || contract.id);
-        }
-        navigate(
-          `/contracts?${nextParams.toString()}`
-        );
-      } else {
-        showBanner("Application accepted", contractResult.message || "Accepted, but the contract could not be generated");
-      }
+      navigate(`/contracts?${nextParams.toString()}`);
       return;
     }
 
