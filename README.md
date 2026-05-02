@@ -102,32 +102,17 @@ Then try again.
 1. Make sure both **backend** and **frontend** are running simultaneously
 2. Open the project in the browser using `http://localhost:5173`
 3. Navigate through the Login or Sign Up page
-4. Choose your role (Brand / Influencer / Admin)
-5. Based on the role, you are redirected to the appropriate dashboard
+4. Based on the role, you are redirected to the appropriate dashboard
+5. for admin, you can use one of these accounts: ( becuase admin cannot create an account by logic )
+ ```bash
+admin4@microconnect.com 
+  password: admin4
+
+ admin3@microconnect.com
+  password: admin3
+ ```
+  
 6. All data is now persisted in **MongoDB Atlas** (no longer a front-end prototype)
-
----
-
-## 📂 Project Structure
-MicroConnect/
-├── back-end/
-│   ├── config/         # MongoDB connection
-│   ├── controllers/    # Request/response logic
-│   ├── middleware/     # Authentication & error handling
-│   ├── models/         # Mongoose schemas
-│   ├── routes/         # API endpoints
-│   ├── .env            # Environment variables (gitignored)
-│   └── server.js       # Express server entry point
-├── front-end/
-│   ├── src/
-│   │   ├── api/        # API helpers (auth, campaigns, applications, etc.)
-│   │   ├── components/ # Reusable UI components
-│   │   ├── data/       # Data utilities
-│   │   ├── pages/      # Brand, Influencer, Admin pages
-│   │   └── styles/     # CSS files
-│   └── package.json
-├── .gitignore
-└── README.md
 
 ---
 
