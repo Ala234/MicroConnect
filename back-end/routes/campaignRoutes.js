@@ -11,7 +11,7 @@ const {
 const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
-// Public to logged-in users (brands & influencers can view)
+// Public to logged-in users
 router.get('/', protect, getAllCampaigns);
 router.get('/my', protect, authorize('brand'), getMyCampaigns);
 router.get('/:id', protect, getCampaignById);

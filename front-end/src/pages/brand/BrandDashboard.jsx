@@ -1,7 +1,7 @@
 import "../../styles/dashboard.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCampaigns } from "../../data/mockCampaigns";
+import { fetchMyCampaigns } from "../../data/mockCampaigns";
 
 const createPlaceholderLogo = (name) => {
   const initial = (name || "B").charAt(0).toUpperCase().replace(/[^A-Z0-9]/, "B");
@@ -14,6 +14,7 @@ export default function BrandDashboard() {
   const [campaigns, setCampaigns] = useState([]);
   const [brandName, setBrandName] = useState("Brand");
   const [brandLogo, setBrandLogo] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const stored = localStorage.getItem("user");
@@ -35,7 +36,20 @@ export default function BrandDashboard() {
     setBrandName(name);
     setBrandLogo(profile.logo || createPlaceholderLogo(name));
 
-    setCampaigns(getCampaigns());
+    // Fetch campaigns from MongoDB backend
+    const loadCampaigns = async () => {
+      setIsLoading(true);
+      try {
+        const myCampaigns = await fetchMyCampaigns();
+        setCampaigns(myCampaigns);
+      } catch (err) {
+        console.error("Failed to fetch campaigns:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCampaigns();
   }, [navigate]);
 
   const handleLogout = () => {
@@ -102,7 +116,7 @@ export default function BrandDashboard() {
 
           <div className="dashboard-stats">
             <div className="dashboard-stat-card">
-              <h3>8</h3>
+              <h3>{campaigns.length}</h3>
               <p>Active Campaigns</p>
             </div>
 
@@ -137,42 +151,55 @@ export default function BrandDashboard() {
               </button>
             </div>
 
-            <div className="dashboard-campaign-list">
-              {campaigns.map((campaign) => (
-                <div
-                  className="dashboard-campaign-item dashboard-campaign-item-clickable"
-                  key={campaign.id}
-                  onClick={() => openCampaignPage(campaign.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      openCampaignPage(campaign.id);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <img
-                    className="dashboard-campaign-thumb"
-                    src={campaign.imageSrc}
-                    alt={campaign.name}
-                  />
+            {isLoading ? (
+              <div className="campaign-filter-empty">
+                <p>Loading campaigns...</p>
+              </div>
+            ) : campaigns.length === 0 ? (
+              <div className="campaign-filter-empty">
+                <p>No campaigns yet.</p>
+                <p style={{ marginTop: "8px", fontSize: "13px" }}>
+                  Click <strong>+ Create Campaign</strong> to get started!
+                </p>
+              </div>
+            ) : (
+              <div className="dashboard-campaign-list">
+                {campaigns.map((campaign) => (
+                  <div
+                    className="dashboard-campaign-item dashboard-campaign-item-clickable"
+                    key={campaign.id || campaign._id}
+                    onClick={() => openCampaignPage(campaign.id || campaign._id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openCampaignPage(campaign.id || campaign._id);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <img
+                      className="dashboard-campaign-thumb"
+                      src={campaign.imageSrc}
+                      alt={campaign.name}
+                    />
 
-                  <div className="dashboard-campaign-content">
-                    <h3>{campaign.name}</h3>
-                    <div className="dashboard-campaign-meta">
-                      <span>{campaign.influencersCount} Influencers</span>
-                      <span>{campaign.reach} Reach</span>
-                      <span>{campaign.progress}% Complete</span>
+                    <div className="dashboard-campaign-content">
+                      <h3>{campaign.name}</h3>
+                      <div className="dashboard-campaign-meta">
+                        <span>{campaign.influencersCount} Influencers</span>
+                        <span>{campaign.reach || "0"} Reach</span>
+                        <span>{campaign.progress || 0}% Complete</span>
+                      </div>
+                      <div className="dashboard-progress">
+                        <div style={{ width: `${campaign.progress || 0}%` }}></div>
+                      </div>
+                      <div className="dashboard-campaign-actions"></div>
                     </div>
-                    <div className="dashboard-progress">
-                      <div style={{ width: `${campaign.progress}%` }}></div>
-                    </div>
-                    <div className="dashboard-campaign-actions"></div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
