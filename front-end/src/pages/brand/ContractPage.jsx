@@ -2,279 +2,191 @@ import "../../styles/dashboard.css";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  FiArrowLeft,
   FiCalendar,
   FiCheckCircle,
   FiClock,
+  FiDollarSign,
   FiDownload,
   FiFileText,
   FiLogOut,
   FiMessageCircle,
+  FiPlus,
   FiSend,
-  FiXCircle,
+  FiX,
 } from "react-icons/fi";
-import homeImage from "../../assets/images/home.png";
 import SaraBImage from "../../assets/images/SaraBlogs-Profile.jpg";
 import LisaSImage from "../../assets/images/Lisa-Profile.jpg";
 import { getCampaignById } from "../../data/mockCampaigns";
-import { sendContractFromBrand, updateContractStatus } from "../../data/contracts";
+import { sendContractFromBrand } from "../../data/contracts";
 import BrandChatModal from "./BrandChatModal";
 
-const contractProfiles = {
+const influencerProfiles = {
   "sarah-johnson": {
     name: "Sarah Johnson",
     email: "sarah.johnson@email.com",
     imageSrc: SaraBImage,
-    company: "FashionForward Inc.",
-    compensation: "$500 + Products",
-    duration: "2 Months",
-    startDate: "March 1, 2026",
-    endDate: "April 30, 2026",
-    deliverables: [
-      "4 Instagram posts (feed)",
-      "8 Instagram Story (feed)",
-      "2 TikTok Videos",
-      "1 YouTube integration (optional)",
-    ],
   },
   "mia-carter": {
     name: "Mia Carter",
     email: "mia.carter@email.com",
     imageSrc: LisaSImage,
-    company: "FashionForward Inc.",
-    compensation: "$650 + Products",
-    duration: "6 Weeks",
-    startDate: "March 10, 2026",
-    endDate: "April 21, 2026",
-    deliverables: [
-      "3 Instagram reels",
-      "6 Instagram Stories",
-      "2 TikTok videos",
-      "1 styling livestream",
-    ],
   },
 };
 
-const terms = [
-  "Content must align with the brand guidelines provided.",
-  "All posts require brand approval before publishing.",
-  "Influencer retains full rights to content.",
-  "Payment will be processed within 30 days of campaign completion.",
-  "Exclusive partnership for the duration of the campaign.",
-];
-
-const statusMeta = {
-  requested: {
-    badgeLabel: "Pending",
-    badgeClass: "pending",
-    title: "Contract request sent",
-    description:
-      "The digital contract was sent to the influencer and is waiting for confirmation.",
-  },
-  accepted: {
-    badgeLabel: "Active",
-    badgeClass: "accepted",
-    title: "Contract confirmed",
-    description:
-      "Both parties have confirmed the digital contract. The campaign can now proceed.",
-  },
-  rejected: {
-    badgeLabel: "Rejected",
-    badgeClass: "rejected",
-    title: "Contract rejected",
-    description:
-      "The influencer declined the current agreement. Review the terms and send a new request.",
-  },
+const generateContractId = () => {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `CT-${timestamp}-${random}`;
 };
 
-const bannerMeta = {
-  download: {
-    title: "Downloading contract!",
-    text: "Your contract PDF is being prepared",
-    className: "contract-banner success",
-  },
-  accepted: {
-    title: "Contract confirmed!",
-    text: "The influencer has accepted the digital contract",
-    className: "contract-banner success",
-  },
-  rejected: {
-    title: "Contract rejected!",
-    text: "The influencer has declined the current contract request",
-    className: "contract-banner danger",
-  },
-  requested: {
-    title: "Contract request sent!",
-    text: "The influencer has been notified to review the digital contract",
-    className: "contract-banner success",
-  },
-  message: {
-    title: "Chat opened",
-    text: "A conversation with the influencer is ready to continue",
-    className: "contract-banner info",
-  },
-};
+const COMMISSION_RATE = 10;
 
 export default function ContractPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const campaignId = searchParams.get("campaignId") || "spring-collection";
   const influencerId = searchParams.get("influencer") || "sarah-johnson";
-  const initialState = searchParams.get("state") || "requested";
-  const initialBannerKey =
-    initialState === "accepted" || initialState === "rejected"
-      ? initialState
-      : initialState === "downloaded"
-        ? "download"
-        : initialState === "requested"
-          ? "requested"
-          : null;
+  const initialState = searchParams.get("state") || "draft";
+
+  const campaign = getCampaignById(campaignId);
+  const profile = influencerProfiles[influencerId] || influencerProfiles["sarah-johnson"];
+
+  const brandProfile = useMemo(() => {
+    const stored = localStorage.getItem("brandProfile");
+    return stored ? JSON.parse(stored) : { companyName: "Brand" };
+  }, []);
+
+  const [contractId] = useState(() => {
+    const existing = searchParams.get("contractId");
+    return existing || generateContractId();
+  });
+
   const [contractState, setContractState] = useState(initialState);
-  const [bannerKey, setBannerKey] = useState(initialBannerKey);
+  const [bannerMessage, setBannerMessage] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  const campaign = getCampaignById(campaignId) || getCampaignById("spring-collection");
-  const profile = contractProfiles[influencerId] || contractProfiles["sarah-johnson"];
-  const contractInfo = statusMeta[contractState] || statusMeta.requested;
+  const [contractValue, setContractValue] = useState("");
+  const [duration, setDuration] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [deliverables, setDeliverables] = useState([""]);
+  const [customTerms, setCustomTerms] = useState([""]);
+  const [paymentTiming, setPaymentTiming] = useState("before");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const isDraft = contractState === "draft";
+
+  const totalAmount = parseFloat(String(contractValue).replace(/[^0-9.]/g, "")) || 0;
+  const adminCut = (totalAmount * COMMISSION_RATE) / 100;
+  const influencerCut = totalAmount - adminCut;
 
   useEffect(() => {
-    if (contractState === "requested") {
-      sendContractFromBrand({
-        campaign,
-        influencer: {
-          id: influencerId,
-          name: profile.name,
-          email: profile.email,
-        },
-      });
+    if (!searchParams.get("contractId")) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set("contractId", contractId);
+      setSearchParams(nextParams, { replace: true });
     }
-  }, [campaignId, influencerId, contractState]);
-
-  const contractMetrics = useMemo(
-    () => [
-      {
-        icon: <FiFileText />,
-        label: "Compensation",
-        value: profile.compensation,
-        tone: "lavender",
-      },
-      {
-        icon: <FiClock />,
-        label: "Duration",
-        value: profile.duration,
-        tone: "blue",
-      },
-      {
-        icon: <FiCalendar />,
-        label: "Start date",
-        value: profile.startDate,
-        tone: "peach",
-      },
-      {
-        icon: <FiCalendar />,
-        label: "End date",
-        value: profile.endDate,
-        tone: "mint",
-      },
-    ],
-    [profile]
-  );
+  }, [contractId, searchParams, setSearchParams]);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
-  const updateSearchState = (nextState) => {
+  const handleDeliverableChange = (index, value) => {
+    setDeliverables((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
+  const handleAddDeliverable = () => setDeliverables((prev) => [...prev, ""]);
+  const handleRemoveDeliverable = (index) =>
+    setDeliverables((prev) => prev.filter((_, i) => i !== index));
+
+  const handleTermChange = (index, value) => {
+    setCustomTerms((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
+  const handleAddTerm = () => setCustomTerms((prev) => [...prev, ""]);
+  const handleRemoveTerm = (index) =>
+    setCustomTerms((prev) => prev.filter((_, i) => i !== index));
+
+  const validateContract = () => {
+    if (!totalAmount || totalAmount <= 0)
+      return "Please enter a valid contract value (e.g. 5000)";
+    if (!duration.trim()) return "Please enter campaign duration";
+    if (!startDate) return "Please select a start date";
+    if (!endDate) return "Please select an end date";
+    if (endDate < startDate) return "End date must be after start date";
+    const validDeliverables = deliverables.filter((d) => d.trim());
+    if (validDeliverables.length === 0) return "Please add at least one deliverable";
+    const validTerms = customTerms.filter((t) => t.trim());
+    if (validTerms.length === 0) return "Please add at least one term";
+    return null;
+  };
+
+  const handleRequestContract = () => {
+    const validationError = validateContract();
+    if (validationError) {
+      setErrorMessage(validationError);
+      return;
+    }
+    setErrorMessage("");
+
+    sendContractFromBrand({
+      campaign,
+      influencer: { id: influencerId, name: profile.name, email: profile.email },
+    });
+
+    setContractState("pending");
+    setBannerMessage({
+      type: "success",
+      title: "Contract request sent!",
+      text: `Waiting for ${profile.name}'s approval`,
+    });
+
     const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("campaignId", campaignId);
-    nextParams.set("influencer", influencerId);
-    nextParams.set("state", nextState);
+    nextParams.set("state", "pending");
     setSearchParams(nextParams);
   };
 
-  const handleContractAction = (action) => {
-    if (action === "accept") {
-      const savedContract = sendContractFromBrand({
-        campaign,
-        influencer: {
-          id: influencerId,
-          name: profile.name,
-          email: profile.email,
-        },
-      });
-      updateContractStatus(savedContract.contractId, "Active");
-      setContractState("accepted");
-      setBannerKey("accepted");
-      updateSearchState("accepted");
-      return;
-    }
-
-    if (action === "reject") {
-      const savedContract = sendContractFromBrand({
-        campaign,
-        influencer: {
-          id: influencerId,
-          name: profile.name,
-          email: profile.email,
-        },
-      });
-      updateContractStatus(savedContract.contractId, "Rejected");
-      setContractState("rejected");
-      setBannerKey("rejected");
-      updateSearchState("rejected");
-      return;
-    }
-
-    if (action === "request") {
-      sendContractFromBrand({
-        campaign,
-        influencer: {
-          id: influencerId,
-          name: profile.name,
-          email: profile.email,
-        },
-      });
-      setContractState("requested");
-      setBannerKey("requested");
-      updateSearchState("requested");
-      return;
-    }
-
-    if (action === "download") {
-      setBannerKey("download");
-      return;
-    }
-
-    if (action === "message") {
-      setBannerKey("message");
-      setIsChatOpen(true);
-      return;
-    }
-
-    setBannerKey("message");
+  const handleDownload = () => {
+    setBannerMessage({
+      type: "success",
+      title: "Downloading contract!",
+      text: "Your contract PDF is being prepared",
+    });
   };
 
-  const contractBanner = bannerKey ? bannerMeta[bannerKey] : null;
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "Not set";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric", month: "long", day: "numeric",
+    });
+  };
+
+  const stateBadge = isDraft
+    ? { label: "Draft", className: "pending" }
+    : { label: "Pending", className: "pending" };
 
   return (
     <div className="dashboard-page campaign-review-page">
       <div className="dashboard-shell contract-page-shell">
         <div className="dashboard-topbar">
+          <button className="back-btn-large" onClick={() => navigate(-1)} aria-label="Back" type="button">
+            ←
+          </button>
           <div className="dashboard-logo">
             <div className="dashboard-logo-icon">M</div>
             <span>MicroConnect</span>
           </div>
-
           <div className="dashboard-topbar-actions">
-            <button
-              className="dashboard-logout ghost"
-              onClick={() => navigate(`/delete-campaign?id=${campaignId}`)}
-            >
-              <FiArrowLeft />
-              <span>Back</span>
-            </button>
-
             <button className="dashboard-logout ghost" onClick={handleLogout}>
               <FiLogOut />
               <span>Log out</span>
@@ -289,30 +201,31 @@ export default function ContractPage() {
                 <FiFileText />
                 <span>Digital contract</span>
               </span>
+              <span className="contract-id-badge">ID: {contractId}</span>
             </div>
-
-            <div className={`contract-state-pill ${contractInfo.badgeClass}`}>
-              <span>{contractInfo.badgeLabel}</span>
+            <div className={`contract-state-pill ${stateBadge.className}`}>
+              <span>{stateBadge.label}</span>
             </div>
           </div>
 
-          {contractBanner ? (
-            <div className={contractBanner.className}>
-              <strong>{contractBanner.title}</strong>
-              <span>{contractBanner.text}</span>
+          {bannerMessage ? (
+            <div className={`contract-banner ${bannerMessage.type}`}>
+              <strong>{bannerMessage.title}</strong>
+              <span>{bannerMessage.text}</span>
             </div>
           ) : null}
 
-          <img
-            className="contract-hero-image"
-            src={homeImage}
-            alt="Digital contract"
-          />
+          {errorMessage ? (
+            <div className="contract-banner danger">
+              <strong>Please complete the contract</strong>
+              <span>{errorMessage}</span>
+            </div>
+          ) : null}
 
           <div className="contract-party-grid">
             <div className="contract-party-card">
               <span>Brand</span>
-              <strong>{profile.company}</strong>
+              <strong>{brandProfile.companyName || "Brand"}</strong>
             </div>
             <div className="contract-party-card influencer">
               <span>Influencer</span>
@@ -328,97 +241,244 @@ export default function ContractPage() {
           </div>
 
           <div className="campaign-review-metrics contract-metrics">
-            {contractMetrics.map((metric) => (
-              <div
-                key={metric.label}
-                className={`campaign-review-metric ${metric.tone}`}
-              >
-                <div className="campaign-review-metric-icon">{metric.icon}</div>
-                <span>{metric.label}</span>
-                <strong>{metric.value}</strong>
-              </div>
-            ))}
+            <div className="campaign-review-metric blue">
+              <div className="campaign-review-metric-icon"><FiClock /></div>
+              <span>Duration</span>
+              {isDraft ? (
+                <>
+                  <input type="text" className="contract-metric-input"
+                    placeholder="2 Months" value={duration}
+                    onChange={(e) => setDuration(e.target.value)} />
+                  <small className="contract-hint">e.g. 2 Months</small>
+                </>
+              ) : (<strong>{duration || "—"}</strong>)}
+            </div>
+
+            <div className="campaign-review-metric peach">
+              <div className="campaign-review-metric-icon"><FiCalendar /></div>
+              <span>Start date</span>
+              {isDraft ? (
+                <>
+                  <input type="date" className="contract-metric-input"
+                    value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  <small className="contract-hint">Pick start date</small>
+                </>
+              ) : (<strong>{formatDate(startDate)}</strong>)}
+            </div>
+
+            <div className="campaign-review-metric mint">
+              <div className="campaign-review-metric-icon"><FiCalendar /></div>
+              <span>End date</span>
+              {isDraft ? (
+                <>
+                  <input type="date" className="contract-metric-input"
+                    value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                  <small className="contract-hint">Pick end date</small>
+                </>
+              ) : (<strong>{formatDate(endDate)}</strong>)}
+            </div>
           </div>
 
           <div className="contract-copy-block">
             <h3>Campaign</h3>
-            <p>{campaign?.name || "Spring Collection Launch"}</p>
+            <p>{campaign?.name || "—"}</p>
           </div>
 
           <div className="contract-copy-block">
             <h3>Deliverables</h3>
+            {isDraft && (<p className="contract-section-hint">Add what you expect from the influencer</p>)}
             <div className="contract-list">
-              {profile.deliverables.map((item) => (
-                <div className="contract-list-item" key={item}>
+              {deliverables.map((item, index) => (
+                <div className="contract-list-item editable" key={index}>
                   <FiCheckCircle />
-                  <span>{item}</span>
+                  {isDraft ? (
+                    <>
+                      <input type="text" className="contract-inline-input"
+                        placeholder="4 Instagram posts (feed)" value={item}
+                        onChange={(e) => handleDeliverableChange(index, e.target.value)} />
+                      {deliverables.length > 1 && (
+                        <button type="button" className="contract-remove-btn"
+                          onClick={() => handleRemoveDeliverable(index)} aria-label="Remove">
+                          <FiX />
+                        </button>
+                      )}
+                    </>
+                  ) : (<span>{item}</span>)}
                 </div>
               ))}
+              {isDraft && (
+                <button type="button" className="contract-add-btn" onClick={handleAddDeliverable}>
+                  <FiPlus /><span>Add deliverable</span>
+                </button>
+              )}
             </div>
           </div>
 
           <div className="contract-copy-block">
             <h3>Terms & Conditions</h3>
+            {isDraft && (<p className="contract-section-hint">Add the agreement terms</p>)}
             <div className="contract-list">
-              {terms.map((item) => (
-                <div className="contract-list-item muted" key={item}>
+              {customTerms.map((item, index) => (
+                <div className="contract-list-item editable muted" key={index}>
                   <FiCheckCircle />
-                  <span>{item}</span>
+                  {isDraft ? (
+                    <>
+                      <input type="text" className="contract-inline-input"
+                        placeholder="Payment will be processed within 30 days" value={item}
+                        onChange={(e) => handleTermChange(index, e.target.value)} />
+                      {customTerms.length > 1 && (
+                        <button type="button" className="contract-remove-btn"
+                          onClick={() => handleRemoveTerm(index)} aria-label="Remove">
+                          <FiX />
+                        </button>
+                      )}
+                    </>
+                  ) : (<span>{item}</span>)}
                 </div>
               ))}
+              {isDraft && (
+                <button type="button" className="contract-add-btn" onClick={handleAddTerm}>
+                  <FiPlus /><span>Add term</span>
+                </button>
+              )}
             </div>
           </div>
 
+          {/* PAYMENT BREAKDOWN WIDGET */}
           <div className="contract-copy-block">
-            <h3>Contracts Actions</h3>
+            <h3>Payment Breakdown</h3>
+            <p className="contract-section-hint">
+              Enter the total contract value to see the payment split.
+            </p>
+
+            <div className="payment-breakdown-widget">
+              <label className="payment-input-label">Total Contract Value (SAR)</label>
+              {isDraft ? (
+                <div className="payment-input-wrapper">
+                  <FiDollarSign className="payment-input-icon" />
+                  <input
+                    type="number"
+                    className="payment-input"
+                    placeholder="5000"
+                    value={contractValue}
+                    onChange={(e) => setContractValue(e.target.value)}
+                    min="0"
+                  />
+                </div>
+              ) : (
+                <div className="payment-readonly-value">
+                  SAR {totalAmount.toLocaleString()}
+                </div>
+              )}
+
+              {totalAmount > 0 && (
+                <>
+                  <div className="payment-breakdown-grid">
+                    <div className="payment-breakdown-card admin-rate">
+                      <p className="payment-label">Commission Rate</p>
+                      <p className="payment-value">{COMMISSION_RATE}%</p>
+                      <p className="payment-sublabel">Platform fee</p>
+                    </div>
+
+                    <div className="payment-breakdown-card admin">
+                      <p className="payment-label">Admin Earnings</p>
+                      <p className="payment-value">
+                        SAR {adminCut.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <p className="payment-sublabel">MicroConnect cut</p>
+                    </div>
+
+                    <div className="payment-breakdown-card influencer">
+                      <p className="payment-label">Influencer Earnings</p>
+                      <p className="payment-value">
+                        SAR {influencerCut.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <p className="payment-sublabel">After platform fee</p>
+                    </div>
+                  </div>
+
+                  <p className="payment-formula">
+                    SAR {totalAmount.toLocaleString()} × {COMMISSION_RATE}% = SAR {adminCut.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (admin) + SAR {influencerCut.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (influencer)
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* PAYMENT TIMING */}
+          <div className="contract-copy-block">
+            <h3>Payment Timing</h3>
+            <p className="contract-section-hint">
+              {isDraft
+                ? "Choose when you'd like to pay the influencer."
+                : "When the brand will pay the influencer."}
+            </p>
+
+            {isDraft ? (
+              <div className="payment-timing-options">
+                <button
+                  type="button"
+                  className={`payment-timing-option ${paymentTiming === "before" ? "active" : ""}`}
+                  onClick={() => setPaymentTiming("before")}
+                >
+                  <div className="payment-timing-icon">💰</div>
+                  <div>
+                    <strong>Pay before campaign</strong>
+                    <p>Pay the full amount upfront when the influencer accepts the contract.</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={`payment-timing-option ${paymentTiming === "after" ? "active" : ""}`}
+                  onClick={() => setPaymentTiming("after")}
+                >
+                  <div className="payment-timing-icon">📅</div>
+                  <div>
+                    <strong>Pay after campaign</strong>
+                    <p>Pay after the influencer completes the deliverables. You can pay from your Contracts page.</p>
+                  </div>
+                </button>
+              </div>
+            ) : (
+              <div className="payment-timing-display">
+                <span className="payment-timing-icon">
+                  {paymentTiming === "before" ? "💰" : "📅"}
+                </span>
+                <strong>
+                  {paymentTiming === "before" ? "Pay before campaign" : "Pay after campaign"}
+                </strong>
+              </div>
+            )}
+          </div>
+
+          <div className="contract-copy-block">
+            <h3>Contract Actions</h3>
           </div>
 
           <div className="contract-actions-panel">
             <div className="contract-actions-summary">
-              {contractState === "accepted" ? <FiCheckCircle /> : null}
-              {contractState === "rejected" ? <FiXCircle /> : null}
-              {contractState === "requested" ? <FiSend /> : null}
-              <strong>{contractInfo.title}</strong>
-              <p>{contractInfo.description}</p>
+              {isDraft ? <FiFileText /> : <FiSend />}
+              <strong>{isDraft ? "Draft contract" : `Waiting for ${profile.name}'s approval`}</strong>
+              <p>{isDraft
+                ? "Fill in the contract details and send it to the influencer."
+                : "The digital contract has been sent. The influencer will review and respond."}</p>
             </div>
 
             <div className="contract-actions-row">
-              <button
-                className="dashboard-primary-btn"
-                onClick={() => handleContractAction("message")}
-              >
-                <FiMessageCircle />
-                <span>Message influencer</span>
+              <button className="dashboard-primary-btn" onClick={() => setIsChatOpen(true)}>
+                <FiMessageCircle /><span>Message influencer</span>
               </button>
 
-              <button
-                className="contract-secondary-btn"
-                onClick={() => handleContractAction("download")}
-              >
-                <FiDownload />
-                <span>Download contract</span>
-              </button>
-
-              <button
-                className="contract-outline-btn"
-                onClick={() => handleContractAction("accept")}
-              >
-                Simulate accept
-              </button>
-
-              <button
-                className="contract-outline-btn danger"
-                onClick={() => handleContractAction("reject")}
-              >
-                Simulate reject
-              </button>
-
-              <button
-                className="contract-outline-btn"
-                onClick={() => handleContractAction("request")}
-              >
-                Request contract
-              </button>
+              {!isDraft ? (
+                <button className="contract-secondary-btn" onClick={handleDownload}>
+                  <FiDownload /><span>Download contract</span>
+                </button>
+              ) : (
+                <button className="dashboard-primary-btn request-contract-btn" onClick={handleRequestContract}>
+                  <FiSend /><span>Request contract</span>
+                </button>
+              )}
             </div>
           </div>
 

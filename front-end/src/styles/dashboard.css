@@ -584,9 +584,9 @@
 
 .campaign-review-head {
   display: grid;
-  grid-template-columns: 62px minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: start;
+  grid-template-columns: 180px minmax(0, 1fr) auto;
+  gap: 0px;
+  align-items: center;
   margin-bottom: 18px;
 }
 
@@ -599,10 +599,11 @@
 
 .campaign-review-thumb.large {
   width: 140px;
-  height: 130px;
-  border-radius: 24px;
+  height: 140px;
+  border-radius: 16px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
-
 .campaign-review-title h1 {
   margin: 0;
   font-size: 28px;
@@ -2746,5 +2747,493 @@
   .brand-hero-logo {
     width: 70px;
     height: 70px;
+  }
+}
+
+/* Contract ID Badge */
+.contract-id-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  margin-left: 12px;
+  border-radius: 999px;
+  background: rgba(143, 176, 255, 0.12);
+  color: #8fb0ff;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: monospace;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(143, 176, 255, 0.2);
+}
+
+.contract-page-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Editable Metric Cards */
+.contract-metric-input {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  outline: none;
+  transition: 0.2s;
+}
+
+.contract-metric-input:focus {
+  border-color: rgba(109, 93, 252, 0.5);
+  background: rgba(109, 93, 252, 0.08);
+}
+
+.contract-metric-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: 600;
+}
+
+.contract-hint {
+  display: block;
+  margin-top: 6px;
+  color: #6c7aa3;
+  font-size: 11px;
+  font-style: italic;
+}
+
+.contract-section-hint {
+  margin: 4px 0 12px 0;
+  color: #9aa8d2;
+  font-size: 13px;
+}
+
+/* Editable Deliverables/Terms */
+.contract-list-item.editable {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.contract-inline-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 14px;
+  padding: 4px 0;
+}
+
+.contract-inline-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+}
+
+.contract-remove-btn {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+  flex-shrink: 0;
+}
+
+.contract-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.contract-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px dashed rgba(143, 176, 255, 0.3);
+  border-radius: 12px;
+  background: transparent;
+  color: #8fb0ff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.contract-add-btn:hover {
+  background: rgba(143, 176, 255, 0.08);
+  border-color: rgba(143, 176, 255, 0.5);
+}
+
+/* Payment Breakdown */
+.payment-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.payment-breakdown-card {
+  padding: 18px;
+  border-radius: 14px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: 0.2s;
+}
+
+.payment-breakdown-card.total {
+  background: rgba(143, 176, 255, 0.1);
+  border-color: rgba(143, 176, 255, 0.25);
+}
+
+.payment-breakdown-card.admin {
+  background: rgba(109, 93, 252, 0.1);
+  border-color: rgba(109, 93, 252, 0.25);
+}
+
+.payment-breakdown-card.influencer {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.payment-label {
+  color: #b8c2e4;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.payment-breakdown-card .payment-value {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+  color: white;
+}
+
+.payment-breakdown-card.admin .payment-value {
+  color: #8fb0ff;
+}
+
+.payment-breakdown-card.influencer .payment-value {
+  color: #22c55e;
+}
+
+.payment-sublabel {
+  color: #9aa8d2;
+  font-size: 11px;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+.payment-formula {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #b8c2e4;
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .payment-breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Payment Timing Options */
+.payment-timing-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.payment-timing-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: left;
+}
+
+.payment-timing-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(143, 176, 255, 0.3);
+}
+
+.payment-timing-option.active {
+  background: rgba(109, 93, 252, 0.12);
+  border-color: rgba(109, 93, 252, 0.6);
+  box-shadow: 0 0 20px rgba(109, 93, 252, 0.2);
+}
+
+.payment-timing-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.payment-timing-option strong {
+  color: white;
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.payment-timing-option p {
+  color: #9aa8d2;
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.payment-timing-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: rgba(109, 93, 252, 0.1);
+  border: 1px solid rgba(109, 93, 252, 0.25);
+  margin-top: 12px;
+}
+
+.payment-timing-display strong {
+  color: white;
+  font-size: 16px;
+}
+
+@media (max-width: 720px) {
+  .payment-timing-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Payment Breakdown Widget */
+.payment-breakdown-widget {
+  margin-top: 12px;
+  padding: 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.payment-input-label {
+  display: block;
+  color: #b8c2e4;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.payment-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.payment-input-icon {
+  position: absolute;
+  left: 14px;
+  color: #8fb0ff;
+  font-size: 18px;
+}
+
+.payment-input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(143, 176, 255, 0.2);
+  border-radius: 10px;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  outline: none;
+  transition: 0.2s;
+}
+
+.payment-input:focus {
+  border-color: rgba(109, 93, 252, 0.6);
+  background: rgba(109, 93, 252, 0.08);
+}
+
+.payment-readonly-value {
+  padding: 14px 16px;
+  background: rgba(143, 176, 255, 0.1);
+  border-radius: 10px;
+  color: white;
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.payment-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.payment-breakdown-card {
+  padding: 18px 14px;
+  border-radius: 14px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.payment-breakdown-card.admin-rate {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.25);
+}
+
+.payment-breakdown-card.admin {
+  background: rgba(143, 176, 255, 0.1);
+  border-color: rgba(143, 176, 255, 0.25);
+}
+
+.payment-breakdown-card.influencer {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.payment-label {
+  color: #b8c2e4;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.payment-breakdown-card .payment-value {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+  color: white;
+}
+
+.payment-breakdown-card.admin-rate .payment-value {
+  color: #c084fc;
+  font-size: 26px;
+}
+
+.payment-breakdown-card.admin .payment-value {
+  color: #8fb0ff;
+}
+
+.payment-breakdown-card.influencer .payment-value {
+  color: #22c55e;
+}
+
+.payment-sublabel {
+  color: #9aa8d2;
+  font-size: 11px;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+.payment-formula {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #b8c2e4;
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .payment-breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Payment Timing Options */
+.payment-timing-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.payment-timing-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: left;
+}
+
+.payment-timing-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(143, 176, 255, 0.3);
+}
+
+.payment-timing-option.active {
+  background: rgba(109, 93, 252, 0.12);
+  border-color: rgba(109, 93, 252, 0.6);
+  box-shadow: 0 0 20px rgba(109, 93, 252, 0.2);
+}
+
+.payment-timing-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.payment-timing-option strong {
+  color: white;
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.payment-timing-option p {
+  color: #9aa8d2;
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.payment-timing-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: rgba(109, 93, 252, 0.1);
+  border: 1px solid rgba(109, 93, 252, 0.25);
+  margin-top: 12px;
+}
+
+.payment-timing-display strong {
+  color: white;
+  font-size: 16px;
+}
+
+@media (max-width: 720px) {
+  .payment-timing-options {
+    grid-template-columns: 1fr;
   }
 }

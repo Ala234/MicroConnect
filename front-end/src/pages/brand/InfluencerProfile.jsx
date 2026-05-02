@@ -1,6 +1,6 @@
 import "../../styles/dashboard.css";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FiArrowLeft, FiLogOut, FiMapPin, FiStar, FiUsers } from "react-icons/fi";
+import { FiLogOut, FiMapPin, FiStar, FiUsers } from "react-icons/fi";
 import { getCampaignById } from "../../data/mockCampaigns";
 import { getInfluencerById } from "../../data/mockInfluencers";
 
@@ -14,6 +14,7 @@ export default function InfluencerProfile() {
 
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
@@ -42,20 +43,21 @@ export default function InfluencerProfile() {
     <div className="dashboard-page campaign-review-page">
       <div className="dashboard-shell profile-page-shell">
         <div className="dashboard-topbar">
+          <button
+            className="back-btn-large"
+            onClick={() => navigate(-1)}
+            aria-label="Back"
+            type="button"
+          >
+            ←
+          </button>
+
           <div className="dashboard-logo">
             <div className="dashboard-logo-icon">M</div>
             <span>MicroConnect</span>
           </div>
 
           <div className="dashboard-topbar-actions">
-            <button
-              className="dashboard-logout ghost"
-              onClick={() => navigate(campaignId ? `/delete-campaign?id=${campaignId}` : "/brand")}
-            >
-              <FiArrowLeft />
-              <span>Back</span>
-            </button>
-
             <button className="dashboard-logout ghost" onClick={handleLogout}>
               <FiLogOut />
               <span>Log out</span>
@@ -141,16 +143,6 @@ export default function InfluencerProfile() {
               }
             >
               Back to Campaign
-            </button>
-            <button
-              className="campaign-status-btn contract"
-              onClick={() =>
-                navigate(
-                  `/contracts?campaignId=${campaignId || "spring-collection"}&influencer=${influencer.id}&state=requested`
-                )
-              }
-            >
-              Open Contract
             </button>
           </div>
         </div>
