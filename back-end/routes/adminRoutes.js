@@ -64,9 +64,5 @@ router.put('/commission', updateCommission);
 // router.get   ('/disputes',               getAllDisputes);
 // router.patch ('/disputes/:id/resolve',   resolveDispute);
 // router.get   ('/transactions',           getAllTransactions);
-// router.get   ('/content',                getAllContent);
-// router.patch ('/content/:id/approve',    approveContent);
-// router.patch ('/content/:id/flag',       flagContent);
-// router.delete('/content/:id',            removeContent);
 
 module.exports = router;
