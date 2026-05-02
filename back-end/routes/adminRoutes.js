@@ -75,8 +75,6 @@ router.get('/influencers', getAllInfluencers);
 
 // ── TODO (no models yet) ───────────────────────────────
 // router.get   ('/contracts',              getAllContracts);
-// router.get   ('/disputes',               getAllDisputes);
-// router.patch ('/disputes/:id/resolve',   resolveDispute);
 // router.get   ('/transactions',           getAllTransactions);
 
 module.exports = router;
