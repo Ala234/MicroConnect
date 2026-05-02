@@ -20,3 +20,5 @@ front-end/.env
 
 # Logs
 *.log
+
+.env.local
