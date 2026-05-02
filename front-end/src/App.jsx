@@ -32,6 +32,7 @@ import UserDetail from "./pages/admin/UserDetail";
 import AdminProfile from "./pages/admin/AdminProfile";
 import BrandProfileSetup from './pages/brand/BrandProfileSetup';
 import BrandProfile from './pages/brand/BrandProfile';
+import DisputeDetail from "./pages/admin/DisputeDetail";
 
 
 import InfluencerProfilee from "./pages/brand/InfluencerProfile";
@@ -72,6 +73,7 @@ function App() {
         <Route path="/settings" element={<AdminSettings />} />
         <Route path="/admin/users/:id" element={<UserDetail />} />
         <Route path="/admin/profile" element={<AdminProfile />} />
+        <Route path="/admin/disputes/:id" element={<DisputeDetail />} />
       </Routes>
     </BrowserRouter>
   );

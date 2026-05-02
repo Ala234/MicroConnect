@@ -4,6 +4,7 @@ const Brand       = require('../models/Brand');
 const Application = require('../models/Application');
 const { Policy, Commission } = require('../models/Settings');
 const Influencer  = require('../models/Influencer');
+const Dispute = require('../models/Dispute');
 
 // ── DASHBOARD STATS ────────────────────────────────────
 // GET /api/admin/stats
@@ -380,10 +381,88 @@ const updateAdminProfile = async (req, res) => {
   }
 };
 
+// ── DISPUTES ───────────────────────────────────────────
+// GET /api/admin/disputes
+const getAllDisputes = async (req, res) => {
+  try {
+    const { status, priority, search } = req.query;
+
+    const filter = {};
+    if (status)   filter.status   = status;
+    if (priority) filter.priority = priority;
+    if (search)   filter.$or = [
+      { subject:     { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } },
+      { disputeId:   { $regex: search, $options: 'i' } },
+    ];
+
+    const disputes = await Dispute.find(filter)
+      .populate('submittedBy', 'name email role')
+      .populate('against',     'name email role')
+      .populate('campaignId',  'title')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(disputes);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch disputes', error: error.message });
+  }
+};
+
+// PATCH /api/admin/disputes/:id/resolve
+const resolveDispute = async (req, res) => {
+  try {
+    const { adminResponse } = req.body;
+
+    const dispute = await Dispute.findById(req.params.id);
+    if (!dispute) return res.status(404).json({ message: 'Dispute not found' });
+    if (dispute.status === 'Resolved') {
+      return res.status(400).json({ message: 'Dispute is already resolved' });
+    }
+
+    dispute.status        = 'Resolved';
+    dispute.resolvedAt    = new Date();
+    dispute.resolvedBy    = req.user._id;
+    dispute.adminResponse = adminResponse || '';
+
+    await dispute.save();
+
+    res.status(200).json({ message: 'Dispute resolved successfully', dispute });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to resolve dispute', error: error.message });
+  }
+};
+
+// GET /api/admin/disputes/stats
+const getDisputeStats = async (req, res) => {
+  try {
+    const total    = await Dispute.countDocuments();
+    const pending  = await Dispute.countDocuments({ status: 'Pending' });
+    const resolved = await Dispute.countDocuments({ status: 'Resolved' });
+    const high     = await Dispute.countDocuments({ status: 'Pending', priority: 'High' });
+
+    res.status(200).json({ total, pending, resolved, high });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch dispute stats', error: error.message });
+  }
+};
+
+const getDisputeById = async (req, res) => {
+  try {
+    const dispute = await Dispute.findById(req.params.id)
+      .populate('submittedBy', 'name email role')
+      .populate('against',     'name email role')
+      .populate('campaignId',  'title')
+      .populate('resolvedBy',  'name');
+
+    if (!dispute) return res.status(404).json({ message: 'Dispute not found' });
+    res.status(200).json(dispute);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch dispute', error: error.message });
+  }
+};
+
 // ── TODO (no models yet) ───────────────────────────────
 // getAllContracts    → waiting for Contract model
-// getAllDisputes     → waiting for Dispute model
-// resolveDispute    → waiting for Dispute model
 // getAllTransactions → waiting for Transaction model
 
 module.exports = {
@@ -407,5 +486,10 @@ module.exports = {
   getCommission,
   updateCommission,
   getAdminProfile,
+  updateAdminProfile,
+  getAllDisputes,
+  resolveDispute,
+  getDisputeStats,
+  getDisputeById,
   updateAdminProfile
 };
