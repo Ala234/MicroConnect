@@ -24,6 +24,7 @@ export default function CampaignDetails() {
   const influencerProfile = getProfileForUser(currentUser);
 
   const campaignBrandName = campaign?.brandName || campaign?.brand || 'Brand';
+  const campaignRouteId = campaign?.id || campaign?._id || id;
   const durationDays = campaign?.startDate && campaign?.endDate
     ? Math.max(1, Math.ceil((new Date(campaign.endDate) - new Date(campaign.startDate)) / (1000 * 60 * 60 * 24)))
     : 0;
@@ -258,6 +259,12 @@ export default function CampaignDetails() {
                 </div>
 
                 <div className="campaign-action-buttons">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => navigate(`/influencer/campaign/${campaignRouteId}/history`)}
+                  >
+                    Campaign History
+                  </button>
                   {hasApplied ? (
                     <button className="btn btn-secondary" disabled>
                       ✓ Already Applied
@@ -270,8 +277,8 @@ export default function CampaignDetails() {
                   <button
                     className="btn btn-secondary"
                     onClick={() =>
-                      navigate(`/influencer/campaign/${campaign.id || campaign._id}/message`, {
-                        state: { returnTo: `/influencer/campaign/${campaign.id || campaign._id}` },
+                      navigate(`/influencer/campaign/${campaignRouteId}/message`, {
+                        state: { returnTo: `/influencer/campaign/${campaignRouteId}` },
                       })
                     }
                   >

@@ -42,6 +42,7 @@ app.use('/api/influencers',  require('./routes/influencerRoutes'));
 app.use('/api/campaigns',    require('./routes/campaignRoutes'));
 app.use('/api/applications', require('./routes/applicationRoutes'));
 app.use('/api/contracts', require('./routes/contractRoutes'));
+app.use('/api/reviews', require('./routes/brandReviewRoutes'));
 
 // ── ERROR MIDDLEWARE (must be after all routes) ────────
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');

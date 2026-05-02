@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
-import { getCampaignById } from '../../data/mockCampaigns';
+import { getBrandReviewsForCampaign } from '../../api/brandReviews';
+import { fetchCampaignById } from '../../data/mockCampaigns';
 import {
   getInfluencerStorageKey,
   getProfileForUser,
@@ -114,6 +115,35 @@ const emptyInfluencerFeedback = {
   reviews: []
 };
 
+const seedCampaignNames = {
+  'spring-collection': 'Spring Collection Launch',
+  'winter-collection': 'Winter Styling Campaign',
+  'skin-care-collection': 'Skin Care Collection'
+};
+
+const createHistoryPlaceholderImage = (name) => {
+  const initial = (name || 'B').charAt(0).toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="432" viewBox="0 0 360 432"><rect width="360" height="432" rx="28" fill="#10172f"/><circle cx="180" cy="176" r="74" fill="#6d5dfc"/><text x="180" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="82" font-weight="700" fill="white">${initial}</text><text x="180" y="292" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#d8e0ff">${name || 'Brand'}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
+const getSeedCampaignFallback = (campaignId) => {
+  const feedback = campaignFeedbackSeed[campaignId];
+  if (!feedback) return null;
+
+  return {
+    id: campaignId,
+    name: seedCampaignNames[campaignId] || `${feedback.brandName} Campaign`,
+    brandName: feedback.brandName,
+    objective: 'Brand reputation',
+    description: `${feedback.brandName} brand feedback from previous influencer collaborations.`,
+    platforms: feedback.socials
+      .filter((social) => social.label !== 'Website')
+      .map((social) => social.label),
+    imageSrc: createHistoryPlaceholderImage(feedback.brandName)
+  };
+};
+
 const formatDate = (date) =>
   new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -134,7 +164,138 @@ const getSocialPlatformClass = (label) => {
   return 'website';
 };
 
-function CampaignHistoryNotFound() {
+const getRecordId = (record) => {
+  if (!record) return '';
+  if (typeof record === 'object') return String(record._id || record.id || '');
+  return String(record);
+};
+
+const isMongoId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || ''));
+
+const getCampaignRouteId = (campaign, fallbackId) => campaign?.id || campaign?._id || fallbackId;
+
+const getCampaignBrandName = (campaign, feedback, brandProfile) => {
+  if (campaign?.brandName) return campaign.brandName;
+  if (typeof campaign?.brand === 'string') return campaign.brand;
+  if (campaign?.brand?.companyName) return campaign.brand.companyName;
+  if (campaign?.brand?.name) return campaign.brand.name;
+  if (brandProfile?.companyName) return brandProfile.companyName;
+  if (brandProfile?.userId?.name) return brandProfile.userId.name;
+  if (campaign?.brandId?.companyName) return campaign.brandId.companyName;
+  if (campaign?.brandId?.name) return campaign.brandId.name;
+  return feedback?.brandName || 'Brand';
+};
+
+const getSeedFeedbackForCampaign = (campaign) => {
+  if (!campaign) return null;
+
+  const directFeedback =
+    campaignFeedbackSeed[campaign.id] ||
+    campaignFeedbackSeed[campaign._id] ||
+    campaignFeedbackSeed[getCampaignRouteId(campaign, '')];
+
+  if (directFeedback) {
+    return directFeedback;
+  }
+
+  if (isMongoId(getCampaignRouteId(campaign, ''))) {
+    return null;
+  }
+
+  const brandName = getCampaignBrandName(campaign).toLowerCase();
+  return (
+    Object.values(campaignFeedbackSeed).find(
+      (seed) => seed.brandName.toLowerCase() === brandName
+    ) || null
+  );
+};
+
+const formatBackendReview = (review) => ({
+  id: review.id || review._id,
+  influencer: review.influencerName || 'Influencer',
+  campaignName: review.campaignName || '',
+  rating: Number(review.rating),
+  comment: review.review || '',
+  date: review.createdAt,
+});
+
+const getSocialHref = (label, value) => {
+  if (!value) return '';
+
+  const trimmed = String(value).trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+
+  const handle = trimmed.replace(/^@/, '');
+  const normalizedLabel = label.toLowerCase();
+
+  if (normalizedLabel.includes('instagram')) {
+    return `https://instagram.com/${handle}`;
+  }
+
+  if (normalizedLabel.includes('tiktok')) {
+    return `https://tiktok.com/@${handle}`;
+  }
+
+  if (normalizedLabel.includes('youtube')) {
+    return `https://youtube.com/@${handle.replace(/\s+/g, '')}`;
+  }
+
+  return `https://${trimmed.replace(/^https?:\/\//i, '')}`;
+};
+
+const getBrandSocials = (campaign, feedback, brandProfile) => {
+  if (feedback?.socials?.length) {
+    return feedback.socials;
+  }
+
+  const campaignBrand = typeof campaign?.brand === 'object' ? campaign.brand : {};
+  const socialData = campaign?.socials || campaign?.brandSocials || {};
+  const candidates = [
+    ['Instagram', brandProfile?.instagram || socialData.instagram || campaignBrand.instagram || campaign?.instagram || campaign?.brandInstagram],
+    ['TikTok', brandProfile?.tiktok || socialData.tiktok || campaignBrand.tiktok || campaign?.tiktok || campaign?.brandTikTok],
+    ['YouTube', socialData.youtube || campaignBrand.youtube || campaign?.youtube || campaign?.brandYouTube],
+    ['Website', brandProfile?.website || socialData.website || campaignBrand.website || campaign?.website || campaign?.brandWebsite]
+  ];
+
+  return candidates
+    .filter(([, value]) => Boolean(value))
+    .map(([label, value]) => ({
+      label,
+      value,
+      href: getSocialHref(label, value)
+    }));
+};
+
+const fetchBrandProfileForCampaign = async (campaign) => {
+  try {
+    const response = await fetch('http://localhost:5000/api/brands');
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const brands = Array.isArray(data) ? data : data.brands || data.data || [];
+    const campaignBrandId = getRecordId(campaign?.brandId);
+    const campaignBrandName = String(campaign?.brandName || '').toLowerCase();
+
+    return (
+      brands.find((brand) => {
+        const userId = getRecordId(brand.userId);
+        const companyName = String(brand.companyName || '').toLowerCase();
+        const userName = String(brand.userId?.name || '').toLowerCase();
+
+        return (
+          (campaignBrandId && userId === campaignBrandId) ||
+          (campaignBrandName && companyName === campaignBrandName) ||
+          (campaignBrandName && userName === campaignBrandName)
+        );
+      }) || null
+    );
+  } catch {
+    return null;
+  }
+};
+
+function CampaignHistoryNotFound({ message = 'The requested campaign could not be found.' }) {
   const navigate = useNavigate();
 
   return (
@@ -158,8 +319,8 @@ function CampaignHistoryNotFound() {
 
         <section className="campaigns-section padded-top">
           <div className="content-card">
-            <h3>Campaign History Not Found</h3>
-            <p className="text-muted">No influencer feedback is available for the requested campaign.</p>
+            <h3>Campaign Not Found</h3>
+            <p className="text-muted">{message}</p>
             <button className="btn btn-secondary" onClick={() => navigate('/influencer')}>
               Back to Campaigns
             </button>
@@ -173,14 +334,27 @@ function CampaignHistoryNotFound() {
 export default function CampaignHistory() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const campaign = id ? getCampaignById(id) : null;
-  const feedback = campaign ? campaignFeedbackSeed[campaign.id] : null;
-  const campaignBrandName = campaign?.brandName || campaign?.brand || feedback?.brandName || 'Brand';
+  const [campaign, setCampaign] = useState(null);
+  const [brandProfile, setBrandProfile] = useState(null);
+  const [backendReviews, setBackendReviews] = useState([]);
+  const [isCampaignLoading, setIsCampaignLoading] = useState(Boolean(id));
+  const [loadError, setLoadError] = useState('');
+
   const profileComplete = isInfluencerProfileComplete(getProfileForUser());
+  const feedback = getSeedFeedbackForCampaign(campaign);
+  const campaignBrandName = getCampaignBrandName(campaign, feedback, brandProfile);
+  const campaignRouteId = getCampaignRouteId(campaign, id);
+  const campaignPlatforms = Array.isArray(campaign?.platforms)
+    ? campaign.platforms.length > 0 ? campaign.platforms.join(', ') : 'Not specified'
+    : campaign?.platforms || 'Not specified';
+  const backendReviewCards = backendReviews.map(formatBackendReview);
+  const campaignReviews = backendReviewCards.length > 0 ? backendReviewCards : feedback?.reviews || [];
+  const brandSocials = getBrandSocials(campaign, feedback, brandProfile);
   const influencerFeedback = influencerFeedbackByEmail[getInfluencerStorageKey()] || emptyInfluencerFeedback;
   const hasInfluencerFeedback = influencerFeedback.reviews.length > 0;
-  const averageRating = feedback
-    ? (feedback.reviews.reduce((total, review) => total + review.rating, 0) / feedback.reviews.length).toFixed(1)
+  const hasCampaignReviews = campaignReviews.length > 0;
+  const averageRating = hasCampaignReviews
+    ? (campaignReviews.reduce((total, review) => total + review.rating, 0) / campaignReviews.length).toFixed(1)
     : null;
 
   useEffect(() => {
@@ -189,12 +363,95 @@ export default function CampaignHistory() {
     }
   }, [profileComplete, navigate]);
 
+  useEffect(() => {
+    if (!id || !profileComplete) {
+      setCampaign(null);
+      setBrandProfile(null);
+      setBackendReviews([]);
+      setIsCampaignLoading(false);
+      return undefined;
+    }
+
+    let ignoreResult = false;
+
+    const loadCampaignHistory = async () => {
+      setIsCampaignLoading(true);
+      setLoadError('');
+
+      try {
+        const campaignData = (await fetchCampaignById(id)) || getSeedCampaignFallback(id);
+        const brandData = campaignData ? await fetchBrandProfileForCampaign(campaignData) : null;
+        const selectedCampaignId = getCampaignRouteId(campaignData, id);
+        const reviewsResult = campaignData && isMongoId(selectedCampaignId)
+          ? await getBrandReviewsForCampaign(selectedCampaignId)
+          : { success: true, reviews: [] };
+
+        if (!ignoreResult) {
+          setCampaign(campaignData);
+          setBrandProfile(brandData);
+          setBackendReviews(reviewsResult.success ? reviewsResult.reviews || [] : []);
+        }
+      } catch (err) {
+        if (!ignoreResult) {
+          setCampaign(null);
+          setBrandProfile(null);
+          setBackendReviews([]);
+          setLoadError(err.message || 'Unable to load campaign history.');
+        }
+      } finally {
+        if (!ignoreResult) {
+          setIsCampaignLoading(false);
+        }
+      }
+    };
+
+    loadCampaignHistory();
+
+    return () => {
+      ignoreResult = true;
+    };
+  }, [id, profileComplete]);
+
   if (!profileComplete) {
     return null;
   }
 
-  if (id && (!campaign || !feedback)) {
-    return <CampaignHistoryNotFound />;
+  if (id && isCampaignLoading) {
+    return (
+      <main className="influencer-page dashboard-page">
+        <div className="dashboard-shell influencer-shell">
+          <header className="influencer-topbar dashboard-topbar">
+            <div className="brand-logo dashboard-logo">
+              <span className="brand-mark dashboard-logo-icon">M</span>
+              <div>
+                <p className="brand-name">MicroConnect</p>
+                <p className="brand-subtitle">Influencer Portal</p>
+              </div>
+            </div>
+
+            <InfluencerTopNav active="campaigns" />
+
+            <div className="topbar-actions">
+              <button className="dashboard-logout" onClick={() => navigate('/login')}>Sign out</button>
+            </div>
+          </header>
+
+          <section className="campaigns-section padded-top">
+            <div className="content-card">
+              <h3>Loading campaign history...</h3>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (id && !campaign) {
+    return (
+      <CampaignHistoryNotFound
+        message={loadError || 'The requested campaign could not be found.'}
+      />
+    );
   }
 
   return (
@@ -220,7 +477,7 @@ export default function CampaignHistory() {
           <div className="campaigns-header">
             <div>
               <p className="section-label">{id ? 'Campaign History' : 'Brand Feedback'}</p>
-              <h2>{id ? `${campaign.name} feedback history for ${campaignBrandName}` : 'Brand reviews about your work'}</h2>
+              <h2>{id ? `${campaign.name} brand feedback history` : 'Brand reviews about your work'}</h2>
             </div>
             <button className="btn btn-outline" onClick={() => navigate(id ? '/influencer' : '/influencer/profile')}>
               Back
@@ -240,27 +497,31 @@ export default function CampaignHistory() {
                     <h3>Connect with {campaignBrandName}</h3>
                   </div>
                   <div className="social-account-grid">
-                    {feedback.socials.map((social) => {
-                      const platformClass = getSocialPlatformClass(social.label);
+                    {brandSocials.length > 0 ? (
+                      brandSocials.map((social) => {
+                        const platformClass = getSocialPlatformClass(social.label);
 
-                      return (
-                        <a
-                          key={social.label}
-                          className={`social-account-card history-social-account ${platformClass}`}
-                          href={social.href}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <div className="social-account-icon" aria-hidden="true">
-                            <SocialPlatformIcon platform={platformClass} />
-                          </div>
-                          <div className="social-account-content">
-                            <span className="social-account-label">{social.label}</span>
-                            <p>{social.value}</p>
-                          </div>
-                        </a>
-                      );
-                    })}
+                        return (
+                          <a
+                            key={social.label}
+                            className={`social-account-card history-social-account ${platformClass}`}
+                            href={social.href}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <div className="social-account-icon" aria-hidden="true">
+                              <SocialPlatformIcon platform={platformClass} />
+                            </div>
+                            <div className="social-account-content">
+                              <span className="social-account-label">{social.label}</span>
+                              <p>{social.value}</p>
+                            </div>
+                          </a>
+                        );
+                      })
+                    ) : (
+                      <p className="text-muted">No brand social media links are available yet.</p>
+                    )}
                   </div>
                 </div>
               </aside>
@@ -269,50 +530,69 @@ export default function CampaignHistory() {
                 <div className="history-detail-copy">
                   <p className="history-detail-brand">{campaignBrandName}</p>
                   <h3 className="history-detail-title">{campaign.name}</h3>
-                  <p className="history-detail-summary">{campaign.description}</p>
+                  <p className="history-detail-summary">
+                    {campaign.description || 'No campaign summary is available yet.'}
+                  </p>
                 </div>
 
                 <div className="history-detail-meta">
                   <div className="history-detail-stat">
-                    <span className="meta-label">Campaign Summary</span>
-                    <span className="meta-value">{campaign.objective} for {campaign.platforms.join(', ')}</span>
+                    <span className="meta-label">Brand</span>
+                    <span className="meta-value">{campaignBrandName}</span>
                   </div>
                   <div className="history-detail-stat">
-                    <span className="meta-label">Completion Date</span>
-                    <span className="meta-value">{formatDate(feedback.completionDate)}</span>
+                    <span className="meta-label">Objective</span>
+                    <span className="meta-value">{campaign.objective || 'Not specified'}</span>
+                  </div>
+                  <div className="history-detail-stat">
+                    <span className="meta-label">Platforms</span>
+                    <span className="meta-value">{campaignPlatforms}</span>
                   </div>
                   <div className="history-detail-stat">
                     <span className="meta-label">Average Rating</span>
-                    <span className="meta-value">{averageRating}/5</span>
+                    <span className="meta-value">{averageRating ? `${averageRating}/5` : 'No ratings yet'}</span>
                   </div>
                 </div>
 
                 <div className="history-review-list history-detail-reviews">
-                  {feedback.reviews.map((review) => (
-                    <section className="history-review-card" key={review.influencer}>
-                      <div className="history-review-header">
-                        <div>
-                          <h4>{review.influencer}</h4>
-                          <p>Completed collaboration</p>
-                        </div>
-                        <div className="history-campaign-rating">
-                          <div className="rating-stars">
-                            {renderStars(review.rating)}
+                  {hasCampaignReviews ? (
+                    campaignReviews.map((review) => (
+                      <section className="history-review-card" key={review.id || `${review.influencer}-${review.date || review.comment}`}>
+                        <div className="history-review-header">
+                          <div>
+                            <h4>{review.influencer}</h4>
+                            <p>
+                              {review.date
+                                ? `${review.campaignName ? `${review.campaignName} | ` : ''}${formatDate(review.date)}`
+                                : 'Completed collaboration'}
+                            </p>
                           </div>
-                          <span className="rating-text">{review.rating}/5</span>
+                          <div className="history-campaign-rating">
+                            <div className="rating-stars">
+                              {renderStars(review.rating)}
+                            </div>
+                            <span className="rating-text">{review.rating}/5</span>
+                          </div>
                         </div>
-                      </div>
-                      <p className="review-text">{review.comment}</p>
-                    </section>
-                  ))}
+                        <p className="review-text">{review.comment}</p>
+                      </section>
+                    ))
+                  ) : (
+                    <div className="no-results">
+                      <h3>No brand reviews yet</h3>
+                      <p>
+                        This brand has not received influencer feedback yet. Once influencers complete collaborations, their ratings and reviews will appear here.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="campaign-action-buttons history-action-buttons">
                   <button
                     className="btn btn-secondary"
                     onClick={() =>
-                      navigate(`/influencer/campaign/${campaign.id}/message`, {
-                        state: { returnTo: `/influencer/campaign/${campaign.id}/history` }
+                      navigate(`/influencer/campaign/${campaignRouteId}/message`, {
+                        state: { returnTo: `/influencer/campaign/${campaignRouteId}/history` }
                       })
                     }
                   >
@@ -321,8 +601,8 @@ export default function CampaignHistory() {
                   <button
                     className="btn btn-primary"
                     onClick={() =>
-                      navigate(`/influencer/campaign/${campaign.id}/propose`, {
-                        state: { returnTo: `/influencer/campaign/${campaign.id}/history` }
+                      navigate(`/influencer/campaign/${campaignRouteId}/propose`, {
+                        state: { returnTo: `/influencer/campaign/${campaignRouteId}/history` }
                       })
                     }
                   >
