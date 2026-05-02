@@ -1,106 +1,71 @@
 const mongoose = require('mongoose');
 
-const statusToneMap = {
-  Pending: 'pending',
-  'Under Review': 'review',
-  Accepted: 'accepted',
-  Rejected: 'rejected',
-};
-
-const normalizeStatus = (value) => {
-  if (!value) {
-    return value;
-  }
-
-  const normalized = String(value).trim().toLowerCase();
-
-  if (normalized === 'pending') {
-    return 'Pending';
-  }
-
-  if (normalized === 'under review' || normalized === 'under-review' || normalized === 'review') {
-    return 'Under Review';
-  }
-
-  if (normalized === 'accepted') {
-    return 'Accepted';
-  }
-
-  if (normalized === 'rejected') {
-    return 'Rejected';
-  }
-
-  return value;
-};
-
 const applicationSchema = new mongoose.Schema(
   {
-    influencer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Influencer',
-    },
-    campaign: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Campaign',
-    },
-    campaignName: {
-      type: String,
-      trim: true,
-    },
-    brandName: {
-      type: String,
-      trim: true,
-    },
     campaignId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Campaign',
+      required: true,
+    },
+    campaignName: {
+      type: String,
+      required: true,
     },
     influencerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+      required: true,
+    },
+    influencerName: {
+      type: String,
+      required: true,
+    },
+    influencerEmail: {
+      type: String,
+      required: true,
+    },
+    influencerImage: {
+      type: String,
+      default: '',
+    },
+    influencerFollowers: {
+      type: String,
+      default: '0',
+    },
+    influencerEngagement: {
+      type: String,
+      default: '0%',
+    },
+    influencerAge: {
+      type: String,
+      default: '',
+    },
+    influencerLocation: {
+      type: String,
+      default: '',
+    },
+    influencerNiches: {
+      type: [String],
+      default: [],
     },
     proposal: {
       type: String,
-      required: true,
-      trim: true,
+      default: '',
     },
     status: {
       type: String,
-      enum: ['Pending', 'Under Review', 'Accepted', 'Rejected'],
-      default: 'Pending',
-      set: normalizeStatus,
-    },
-    statusTone: {
-      type: String,
-      enum: ['pending', 'review', 'accepted', 'rejected'],
+      enum: ['pending', 'accepted', 'rejected'],
       default: 'pending',
-    },
-    appliedDate: {
-      type: Date,
-      default: Date.now,
     },
     brandResponse: {
       type: String,
-      trim: true,
+      default: '',
     },
   },
   { timestamps: true }
 );
 
-applicationSchema.pre('validate', function syncApplicationFields() {
-  if (this.campaign && !this.campaignId) {
-    this.campaignId = this.campaign;
-  }
-
-  if (this.campaignId && !this.campaign) {
-    this.campaign = this.campaignId;
-  }
-
-  this.status = normalizeStatus(this.status);
-  this.statusTone = statusToneMap[this.status] || 'pending';
-});
-
-applicationSchema.index({ campaignId: 1, influencerId: 1 }, { unique: true, sparse: true });
-applicationSchema.index({ campaign: 1, influencer: 1 }, { unique: true, sparse: true });
+// Prevent duplicate applications
+applicationSchema.index({ campaignId: 1, influencerId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Application', applicationSchema);
