@@ -16,6 +16,7 @@ import {
 import homeImage from "../../assets/images/home.png";
 import SaraBImage from "../../assets/images/SaraBlogs-Profile.jpg";
 import LisaSImage from "../../assets/images/Lisa-Profile.jpg";
+import JasonImage from "../../assets/images/AhmedFit-Profile.jpg";
 import { getCampaignById } from "../../data/mockCampaigns";
 import { sendContractFromBrand, updateContractStatus } from "../../data/contracts";
 import BrandChatModal from "./BrandChatModal";
@@ -51,6 +52,22 @@ const contractProfiles = {
       "6 Instagram Stories",
       "2 TikTok videos",
       "1 styling livestream",
+    ],
+  },
+  "jason-creator": {
+    name: "Jason Lee",
+    email: "jason.creator@email.com",
+    imageSrc: JasonImage,
+    company: "FashionForward Inc.",
+    compensation: "$700 + Products",
+    duration: "6 Weeks",
+    startDate: "March 15, 2026",
+    endDate: "April 26, 2026",
+    deliverables: [
+      "3 Instagram reels",
+      "5 Instagram Stories",
+      "2 TikTok videos",
+      "1 YouTube short review",
     ],
   },
 };
