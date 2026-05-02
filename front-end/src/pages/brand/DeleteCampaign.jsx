@@ -27,6 +27,11 @@ const initialApplicants = [
     status: "contract",
     flow: "contract",
   },
+  {
+    ...getInfluencerById("jason-creator"),
+    status: "pending",
+    flow: "approval",
+  },
 ];
 
 const filterLabels = ["Followers", "Age Group", "Target Aud", "Engagement lvl"];

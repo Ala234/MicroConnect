@@ -16,9 +16,9 @@ const getDashboardStats = async (req, res) => {
     const totalCampaigns    = await Campaign.countDocuments();
     const activeCampaigns   = await Campaign.countDocuments({ status: 'open' });
     const totalApplications = await Application.countDocuments();
-    const flaggedBios       = await Influencer.countDocuments({ bioStatus: 'flagged' });
-    const openDisputes      = await Dispute.countDocuments({ status: 'Pending' });
-    const highPriority      = await Dispute.countDocuments({ status: 'Pending', priority: 'High' });
+    const flaggedBios       = await Influencer.countDocuments({
+      $or: [{ bioStatus: 'flagged' }, { bioState: 'Flagged' }],
+    });
 
     res.status(200).json({
       totalUsers,
@@ -28,8 +28,6 @@ const getDashboardStats = async (req, res) => {
       activeCampaigns,
       totalApplications,
       flaggedBios,
-      openDisputes,
-      highPriority,
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch dashboard stats', error: error.message });
@@ -493,4 +491,5 @@ module.exports = {
   resolveDispute,
   getDisputeStats,
   getDisputeById,
+  updateAdminProfile
 };

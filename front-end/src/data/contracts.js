@@ -6,6 +6,7 @@ export const TRANSACTION_STATUSES = ['Completed', 'Pending', 'Failed'];
 const influencerEmailById = {
   'sarah-johnson': 'sarah.johnson@email.com',
   'mia-carter': 'mia.carter@email.com',
+  'jason-creator': 'jason.creator@email.com',
 };
 
 const readJson = (key, fallback) => {
