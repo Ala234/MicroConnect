@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import { MoreVertical } from "lucide-react";
 
-const USERS_PER_PAGE = 5;
+const USERS_PER_PAGE = 8;
 
 export default function ManageUsers() {
   const navigate = useNavigate();
