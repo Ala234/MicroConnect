@@ -26,12 +26,7 @@ export default function BrandDashboard() {
     }
 
     const brandProfile = localStorage.getItem("brandProfile");
-    if (!brandProfile) {
-      navigate("/brand/setup");
-      return;
-    }
-
-    const profile = JSON.parse(brandProfile);
+    const profile = brandProfile ? JSON.parse(brandProfile) : {};
     const name = profile.companyName || user.name || "Brand";
     setBrandName(name);
     setBrandLogo(profile.logo || createPlaceholderLogo(name));
