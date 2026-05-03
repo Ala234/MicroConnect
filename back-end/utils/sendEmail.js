@@ -1,30 +1,29 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
+const dns = require('dns');
 
-let resendClient;
-const getResend = () => {
-  if (!resendClient) {
-    if (!process.env.RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY is not set in .env');
-    }
-    resendClient = new Resend(process.env.RESEND_API_KEY);
-  }
-  return resendClient;
-};
+dns.setDefaultResultOrder('ipv4first');
 
 const sendEmail = async ({ to, subject, html }) => {
-  const { data, error } = await getResend().emails.send({
-    from: 'MicroConnect <onboarding@resend.dev>',
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+
+  await transporter.sendMail({
+    from: `"MicroConnect" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,
   });
-
-  if (error) {
-    console.error('Resend error:', error);
-    throw new Error(error.message || 'Failed to send email');
-  }
-
-  return data;
 };
 
 module.exports = sendEmail;
