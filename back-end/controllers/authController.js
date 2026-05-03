@@ -392,32 +392,31 @@ exports.forgotPassword = async (req, res) => {
     user.resetCodeExpiry = new Date(Date.now() + 15 * 60 * 1000);
     await user.save();
 
-    // Send email — fall back to console log if email provider rejects
-    try {
-      await sendEmail({
-        to: user.email,
-        subject: 'MicroConnect - Password Reset Code',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px; background: #f9f9f9; border-radius: 10px;">
-            <h2 style="color: #6366f1; text-align: center;">MicroConnect</h2>
-            <p>Hi ${user.name},</p>
-            <p>You requested to reset your password. Use the code below to continue:</p>
-            <div style="background: white; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-              <h1 style="color: #6366f1; letter-spacing: 8px; margin: 0;">${resetCode}</h1>
-            </div>
-            <p style="color: #666; font-size: 14px;">This code will expire in 15 minutes.</p>
-            <p style="color: #666; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+    // Respond immediately so the UI does not wait for SMTP
+    res.status(200).json({ message: 'Reset code sent to your email' });
+
+    // Send the email in the background — log on failure
+    sendEmail({
+      to: user.email,
+      subject: 'MicroConnect - Password Reset Code',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px; background: #f9f9f9; border-radius: 10px;">
+          <h2 style="color: #6366f1; text-align: center;">MicroConnect</h2>
+          <p>Hi ${user.name},</p>
+          <p>You requested to reset your password. Use the code below to continue:</p>
+          <div style="background: white; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+            <h1 style="color: #6366f1; letter-spacing: 8px; margin: 0;">${resetCode}</h1>
           </div>
-        `,
-      });
-    } catch (mailErr) {
+          <p style="color: #666; font-size: 14px;">This code will expire in 15 minutes.</p>
+          <p style="color: #666; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+        </div>
+      `,
+    }).catch((mailErr) => {
       console.warn('\n=========================================');
-      console.warn(`[DEV FALLBACK] Email send failed: ${mailErr.message}`);
+      console.warn(`[EMAIL FAILED] ${mailErr.message}`);
       console.warn(`Reset code for ${user.email}: ${resetCode}`);
       console.warn('=========================================\n');
-    }
-
-    res.status(200).json({ message: 'Reset code sent to your email' });
+    });
   } catch (error) {
     console.error('Forgot password error:', error);
     res.status(500).json({ message: 'Failed to send reset code', error: error.message });
