@@ -8,6 +8,8 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, minlength: 6 },
     role: { type: String, enum: ['brand', 'influencer', 'admin'], default: 'influencer' },
     isActive: { type: Boolean, default: true },
+      resetCode: { type: String },
+    resetCodeExpiry: { type: Date },
   },
   { timestamps: true }
 );

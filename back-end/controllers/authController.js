@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Influencer = require('../models/Influencer');
+const sendEmail = require('../utils/sendEmail');
 
 // Helper: Generate JWT token
 const generateToken = (userId) => {
@@ -363,6 +364,124 @@ exports.logout = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     res.status(200).json({ user: req.user });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+// @desc    Forgot Password - send code to email
+// @route   POST /api/auth/forgot-password
+// @access  Public
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Please provide an email' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(404).json({ message: 'No account found with this email' });
+    }
+
+    // Generate 6-digit code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Save code with 15-minute expiry
+    user.resetCode = resetCode;
+    user.resetCodeExpiry = new Date(Date.now() + 15 * 60 * 1000);
+    await user.save();
+
+    // Send email
+    await sendEmail({
+      to: user.email,
+      subject: 'MicroConnect - Password Reset Code',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px; background: #f9f9f9; border-radius: 10px;">
+          <h2 style="color: #6366f1; text-align: center;">MicroConnect</h2>
+          <p>Hi ${user.name},</p>
+          <p>You requested to reset your password. Use the code below to continue:</p>
+          <div style="background: white; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+            <h1 style="color: #6366f1; letter-spacing: 8px; margin: 0;">${resetCode}</h1>
+          </div>
+          <p style="color: #666; font-size: 14px;">This code will expire in 15 minutes.</p>
+          <p style="color: #666; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+        </div>
+      `,
+    });
+
+    res.status(200).json({ message: 'Reset code sent to your email' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Failed to send reset code', error: error.message });
+  }
+};
+
+// @desc    Verify reset code
+// @route   POST /api/auth/verify-code
+// @access  Public
+exports.verifyResetCode = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ message: 'Email and code are required' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.resetCode !== code) {
+      return res.status(400).json({ message: 'Invalid code' });
+    }
+
+    if (user.resetCodeExpiry < new Date()) {
+      return res.status(400).json({ message: 'Code has expired. Please request a new one.' });
+    }
+
+    res.status(200).json({ message: 'Code verified successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Reset password
+// @route   POST /api/auth/reset-password
+// @access  Public
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.resetCode !== code) {
+      return res.status(400).json({ message: 'Invalid code' });
+    }
+
+    if (user.resetCodeExpiry < new Date()) {
+      return res.status(400).json({ message: 'Code has expired' });
+    }
+
+    // Update password
+    user.password = await User.hashPassword(newPassword);
+    user.resetCode = undefined;
+    user.resetCodeExpiry = undefined;
+    await user.save();
+
+    res.status(200).json({ message: 'Password reset successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
