@@ -84,7 +84,7 @@ export default function Login() {
 
           <p
             className="login-link muted"
-            onClick={() => navigate("/verification")}
+            onClick={() => navigate("/forgot-password")}
           >
             Forgot your password?
           </p>

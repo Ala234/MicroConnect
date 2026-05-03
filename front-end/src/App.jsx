@@ -34,6 +34,7 @@ import AdminProfile from "./pages/admin/AdminProfile";
 import BrandProfileSetup from './pages/brand/BrandProfileSetup';
 import BrandProfile from './pages/brand/BrandProfile';
 import DisputeDetail from "./pages/admin/DisputeDetail";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 
 
 import InfluencerProfilee from "./pages/brand/InfluencerProfile";
@@ -53,6 +54,7 @@ function App() {
         <Route path="/influencer/contracts" element={<ContractsPage />} />
         <Route path="/influencer/history" element={<CampaignHistory />} />
         <Route path="/influencer/disputes" element={<ComplaintsPage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/influencer/complaints" element={<ComplaintsPage />} />
         <Route path="/influencer/campaign/:id" element={<CampaignDetails />} />
         <Route path="/influencer/campaign/:id/history" element={<CampaignHistory />} />
