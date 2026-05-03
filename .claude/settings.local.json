@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(sed 's/=.*$/=***/')",
-      "Bash(node server.js)"
-    ]
-  }
-}
