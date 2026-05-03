@@ -55,7 +55,7 @@ export const getInfluencerById = async (id) => {
 
 export const getAllInfluencers = async () => {
   try {
-    const res = await fetch(`${API_URL}/all`, {
+    const res = await fetch(`${API_URL}`, {
       headers: { Authorization: `Bearer ${getToken()}` },
     });
     return handleResponse(res);

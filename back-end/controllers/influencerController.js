@@ -294,7 +294,11 @@ exports.getInfluencerById = async (req, res) => {
   }
 
   try {
-    const influencer = await populateInfluencer(Influencer.findById(req.params.id));
+    let influencer = await populateInfluencer(Influencer.findById(req.params.id));
+
+    if (!influencer) {
+      influencer = await populateInfluencer(Influencer.findOne({ userId: req.params.id }));
+    }
 
     if (!influencer) {
       return res.status(404).json({ message: 'Influencer not found' });
