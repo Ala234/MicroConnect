@@ -1,32 +1,21 @@
-const nodemailer = require('nodemailer');
-const dns = require('dns');
+const { Resend } = require('resend');
 
-// Force IPv4 globally for the entire Node process
-dns.setDefaultResultOrder('ipv4first');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async ({ to, subject, html }) => {
-  const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
-
-  const mailOptions = {
-    from: `"MicroConnect" <${process.env.EMAIL_USER}>`,
+  const { data, error } = await resend.emails.send({
+    from: 'MicroConnect <onboarding@resend.dev>',
     to,
     subject,
     html,
-  };
+  });
 
-  await transporter.sendMail(mailOptions);
+  if (error) {
+    console.error('Resend error:', error);
+    throw new Error(error.message || 'Failed to send email');
+  }
+
+  return data;
 };
 
 module.exports = sendEmail;
