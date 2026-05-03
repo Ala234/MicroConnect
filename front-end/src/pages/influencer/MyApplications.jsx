@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
 import { getMyApplications } from '../../api/applications';
-import { createBrandReview, getBrandReviewForApplication } from '../../api/brandReviews';
+import { createBrandReview, getBrandReviewForApplication } from '../../api/reviews';
 import { getMyContracts } from '../../api/contracts';
 import {
   getProfileForUser,
@@ -66,6 +66,7 @@ export default function MyApplications() {
   const [reviewError, setReviewError] = useState('');
   const [reviewNotice, setReviewNotice] = useState('');
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
+  const [reviewHistoryLink, setReviewHistoryLink] = useState('');
 
   const profileComplete = isInfluencerProfileComplete(getProfileForUser());
   const reviewCampaignRecord = getApplicationCampaignRecord(reviewModalApplication);
@@ -144,6 +145,7 @@ export default function MyApplications() {
     setReviewText('');
     setReviewError('');
     setReviewNotice('');
+    setReviewHistoryLink('');
   };
 
   const closeReviewModal = () => {
@@ -190,6 +192,7 @@ export default function MyApplications() {
           [applicationId]: result.review,
         }));
         setReviewNotice('Brand review submitted.');
+        setReviewHistoryLink(campaignId ? `/influencer/campaign/${campaignId}/history` : '');
         setReviewModalApplication(null);
         setReviewRating(0);
         setReviewText('');
@@ -263,6 +266,15 @@ export default function MyApplications() {
               }}
             >
               <p style={{ color: '#22c55e', margin: 0, fontWeight: 700 }}>{reviewNotice}</p>
+              {reviewHistoryLink && (
+                <button
+                  className="btn btn-secondary"
+                  style={{ marginTop: 12 }}
+                  onClick={() => navigate(reviewHistoryLink)}
+                >
+                  View Feedback & Reviews
+                </button>
+              )}
             </div>
           )}
 
@@ -490,7 +502,7 @@ export default function MyApplications() {
                         cursor: isReviewSubmitting ? 'not-allowed' : 'pointer',
                       }}
                     >
-                      ★
+                      &#9733;
                     </button>
                   ))}
                 </div>

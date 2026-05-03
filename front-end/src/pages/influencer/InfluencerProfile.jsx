@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveCurrentInfluencerProfile } from '../../api/auth';
+import { getReviewsForInfluencer } from '../../api/reviews';
 import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
 import SocialPlatformIcon from '../../components/influencer/SocialPlatformIcon';
 import {
@@ -64,6 +65,24 @@ const createPlaceholderAvatar = (name) => {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
 
+const formatReviewDate = (date) => {
+  if (!date) return 'Not dated';
+
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+const getReviewAverage = (reviews) => {
+  if (!reviews.length) return null;
+
+  return (
+    reviews.reduce((total, review) => total + Number(review.rating || 0), 0) / reviews.length
+  ).toFixed(1);
+};
+
 export default function InfluencerProfile() {
   const navigate = useNavigate();
   const currentUser = useMemo(() => getCurrentUser(), []);
@@ -80,6 +99,7 @@ export default function InfluencerProfile() {
   const [errors, setErrors] = useState({});
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [profileReviews, setProfileReviews] = useState([]);
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'influencer') {
@@ -92,11 +112,37 @@ export default function InfluencerProfile() {
     }
   }, [currentUser, initialProfileComplete, navigate]);
 
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'influencer' || !initialProfileComplete) {
+      setProfileReviews([]);
+      return undefined;
+    }
+
+    let ignoreResult = false;
+
+    const loadReviews = async () => {
+      const influencerIdentifier = currentUser._id || currentUser.id || currentUser.email;
+      if (!influencerIdentifier) return;
+
+      const reviewsResult = await getReviewsForInfluencer(influencerIdentifier);
+      if (!ignoreResult) {
+        setProfileReviews(reviewsResult.success ? reviewsResult.reviews || [] : []);
+      }
+    };
+
+    loadReviews();
+
+    return () => {
+      ignoreResult = true;
+    };
+  }, [currentUser, initialProfileComplete]);
+
   const displayName = profile.name || 'Influencer Profile';
   const displayLocation = profile.location || emptyText;
   const displayBio = profile.bio || emptyText;
   const bioState = getBioState(profile);
   const bioStateClass = bioState === 'Flagged' ? 'bio-state-flagged' : 'bio-state-approved';
+  const profileReviewAverage = getReviewAverage(profileReviews);
 
   const handleSave = async () => {
     const validation = validateInfluencerProfile(profile);
@@ -268,7 +314,7 @@ export default function InfluencerProfile() {
                   My Applications
                 </button>
                 <button className="btn btn-outline" onClick={() => navigate('/influencer/history')}>
-                  Brand Feedback
+                  Feedback & Reviews
                 </button>
                 <button className="btn btn-outline" onClick={() => navigate('/influencer/disputes')}>
                   Disputes
@@ -391,6 +437,39 @@ export default function InfluencerProfile() {
               <p>{profile.bio || emptyText}</p>
             )}
             {fieldError('bio')}
+          </div>
+
+          <div className="profile-card">
+            <h3>Feedback & Reviews</h3>
+            {profileReviews.length > 0 ? (
+              <>
+                <div className="profile-highlight-pill" style={{ marginBottom: 16 }}>
+                  <span className="profile-highlight-label">Average Rating</span>
+                  <span className="profile-highlight-value">{profileReviewAverage}/5</span>
+                </div>
+                <div className="history-review-list">
+                  {profileReviews.map((review) => (
+                    <section className="history-review-card" key={review.id || review._id}>
+                      <div className="history-review-header">
+                        <div>
+                          <h4>{review.brandName || review.reviewerName || 'Brand'}</h4>
+                          <p>{review.campaignName || 'Campaign'} | {formatReviewDate(review.createdAt)}</p>
+                        </div>
+                        <div className="history-campaign-rating">
+                          <span className="rating-text">{review.rating}/5</span>
+                        </div>
+                      </div>
+                      <p className="review-text">{review.review}</p>
+                    </section>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="no-results">
+                <h3>No influencer reviews yet</h3>
+                <p>Brand feedback will appear here after completed collaborations.</p>
+              </div>
+            )}
           </div>
 
           <div className="profile-card">

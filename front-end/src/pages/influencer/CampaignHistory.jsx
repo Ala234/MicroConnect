@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
-import { getBrandReviewsForCampaign } from '../../api/brandReviews';
+import { getBrandReviewsForCampaign, getReviewsForInfluencer } from '../../api/reviews';
 import { fetchCampaignById } from '../../data/mockCampaigns';
 import {
-  getInfluencerStorageKey,
+  getCurrentUser,
   getProfileForUser,
   isInfluencerProfileComplete,
 } from '../../data/influencerAccounts';
@@ -75,44 +75,6 @@ const campaignFeedbackSeed = {
       }
     ]
   }
-};
-
-const influencerFeedbackByEmail = {
-  'sarah.johnson@email.com': {
-    averageRating: 4.8,
-    completedCollaborations: 12,
-    repeatBrands: 5,
-    reviews: [
-      {
-        brand: 'Fashion Forward',
-        collaboration: 'Spring Collection Launch',
-        date: '2026-03-18',
-        rating: 5,
-        comment: 'Sarah delivered polished content on time, understood the brief quickly, and communicated clearly through every revision.'
-      },
-      {
-        brand: 'Pure Beauty',
-        collaboration: 'Skin Care Collection',
-        date: '2026-02-04',
-        rating: 5,
-        comment: 'Her audience trust showed in the final content. The review felt authentic, detailed, and aligned with our brand tone.'
-      },
-      {
-        brand: 'North Thread',
-        collaboration: 'Winter Styling Campaign',
-        date: '2026-01-27',
-        rating: 4,
-        comment: 'Reliable and collaborative. She adapted well to feedback and kept the campaign moving without delays.'
-      }
-    ]
-  }
-};
-
-const emptyInfluencerFeedback = {
-  averageRating: null,
-  completedCollaborations: 0,
-  repeatBrands: 0,
-  reviews: []
 };
 
 const seedCampaignNames = {
@@ -217,6 +179,15 @@ const formatBackendReview = (review) => ({
   rating: Number(review.rating),
   comment: review.review || '',
   date: review.createdAt,
+});
+
+const formatInfluencerBackendReview = (review) => ({
+  id: review.id || review._id,
+  brand: review.brandName || review.reviewerName || 'Brand',
+  collaboration: review.campaignName || 'Campaign',
+  date: review.createdAt,
+  rating: Number(review.rating),
+  comment: review.review || '',
 });
 
 const getSocialHref = (label, value) => {
@@ -337,6 +308,7 @@ export default function CampaignHistory() {
   const [campaign, setCampaign] = useState(null);
   const [brandProfile, setBrandProfile] = useState(null);
   const [backendReviews, setBackendReviews] = useState([]);
+  const [backendInfluencerReviews, setBackendInfluencerReviews] = useState([]);
   const [isCampaignLoading, setIsCampaignLoading] = useState(Boolean(id));
   const [loadError, setLoadError] = useState('');
 
@@ -350,8 +322,13 @@ export default function CampaignHistory() {
   const backendReviewCards = backendReviews.map(formatBackendReview);
   const campaignReviews = backendReviewCards.length > 0 ? backendReviewCards : feedback?.reviews || [];
   const brandSocials = getBrandSocials(campaign, feedback, brandProfile);
-  const influencerFeedback = influencerFeedbackByEmail[getInfluencerStorageKey()] || emptyInfluencerFeedback;
-  const hasInfluencerFeedback = influencerFeedback.reviews.length > 0;
+  const influencerReviewCards = backendInfluencerReviews.map(formatInfluencerBackendReview);
+  const hasInfluencerFeedback = influencerReviewCards.length > 0;
+  const influencerAverageRating = hasInfluencerFeedback
+    ? (influencerReviewCards.reduce((total, review) => total + review.rating, 0) / influencerReviewCards.length).toFixed(1)
+    : null;
+  const completedCollaborations = new Set(influencerReviewCards.map((review) => review.collaboration)).size;
+  const repeatBrands = new Set(influencerReviewCards.map((review) => review.brand)).size;
   const hasCampaignReviews = campaignReviews.length > 0;
   const averageRating = hasCampaignReviews
     ? (campaignReviews.reduce((total, review) => total + review.rating, 0) / campaignReviews.length).toFixed(1)
@@ -406,6 +383,36 @@ export default function CampaignHistory() {
     };
 
     loadCampaignHistory();
+
+    return () => {
+      ignoreResult = true;
+    };
+  }, [id, profileComplete]);
+
+  useEffect(() => {
+    if (id || !profileComplete) {
+      setBackendInfluencerReviews([]);
+      return undefined;
+    }
+
+    let ignoreResult = false;
+
+    const loadInfluencerReviews = async () => {
+      const currentUser = getCurrentUser();
+      const influencerIdentifier = currentUser?._id || currentUser?.id || currentUser?.email;
+
+      if (!influencerIdentifier) {
+        setBackendInfluencerReviews([]);
+        return;
+      }
+
+      const reviewsResult = await getReviewsForInfluencer(influencerIdentifier);
+      if (!ignoreResult) {
+        setBackendInfluencerReviews(reviewsResult.success ? reviewsResult.reviews || [] : []);
+      }
+    };
+
+    loadInfluencerReviews();
 
     return () => {
       ignoreResult = true;
@@ -476,7 +483,7 @@ export default function CampaignHistory() {
         <section className={`campaigns-section padded-top${id ? ' campaign-history-page' : ' brand-feedback-page'}`}>
           <div className="campaigns-header">
             <div>
-              <p className="section-label">{id ? 'Campaign History' : 'Brand Feedback'}</p>
+              <p className="section-label">Feedback & Reviews</p>
               <h2>{id ? `${campaign.name} brand feedback history` : 'Brand reviews about your work'}</h2>
             </div>
             <button className="btn btn-outline" onClick={() => navigate(id ? '/influencer' : '/influencer/profile')}>
@@ -617,7 +624,7 @@ export default function CampaignHistory() {
                 <>
                   <section className="content-card influencer-feedback-overview">
                     <div className="influencer-feedback-intro">
-                      <p className="section-label">Profile Feedback</p>
+                      <p className="section-label">Feedback & Reviews</p>
                       <h3>How brands rate your collaborations</h3>
                       <p className="text-muted">
                         This page reflects feedback brands left about your communication, reliability, content quality, and delivery.
@@ -627,22 +634,22 @@ export default function CampaignHistory() {
                     <div className="influencer-feedback-stats">
                       <div className="history-detail-stat">
                         <span className="meta-label">Average Rating</span>
-                        <span className="meta-value">{influencerFeedback.averageRating}/5</span>
+                        <span className="meta-value">{influencerAverageRating}/5</span>
                       </div>
                       <div className="history-detail-stat">
                         <span className="meta-label">Completed Collaborations</span>
-                        <span className="meta-value">{influencerFeedback.completedCollaborations}</span>
+                        <span className="meta-value">{completedCollaborations}</span>
                       </div>
                       <div className="history-detail-stat">
-                        <span className="meta-label">Repeat Brands</span>
-                        <span className="meta-value">{influencerFeedback.repeatBrands}</span>
+                        <span className="meta-label">Reviewed Brands</span>
+                        <span className="meta-value">{repeatBrands}</span>
                       </div>
                     </div>
                   </section>
 
                   <div className="history-review-list">
-                    {influencerFeedback.reviews.map((review) => (
-                      <section className="history-review-card" key={`${review.brand}-${review.date}`}>
+                    {influencerReviewCards.map((review) => (
+                      <section className="history-review-card" key={review.id || `${review.brand}-${review.date}`}>
                         <div className="history-review-header">
                           <div>
                             <h4>{review.brand}</h4>
@@ -662,9 +669,9 @@ export default function CampaignHistory() {
                 </>
               ) : (
                 <div className="no-results">
-                  <h3>No brand feedback yet</h3>
+                  <h3>No influencer reviews yet</h3>
                   <p>
-                    Complete your first collaboration and your brand reviews will appear here. Keep building your profile, apply to campaigns, and your future feedback will help you grow.
+                    Brand feedback will appear here after completed collaborations.
                   </p>
                 </div>
               )}
