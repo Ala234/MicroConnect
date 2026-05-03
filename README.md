@@ -364,15 +364,9 @@ The frontend optionally uses `front-end/.env.local`:
 
 ---
 
-## 📎 Figma Design
-
-https://www.figma.com/design/KvuD9GvGwQqJ2pm5ABmph4/Phase-3?node-id=1-2700&p=f&t=eys0C4cBkKrESFWg-0
+## 📎 Host
+https://microconnect-2.onrender.com
 
 ---
 
-## 📌 Status
 
-✅ **Completed:** Front-End Prototype (Milestone 4)
-✅ **Completed:** Backend Integration with MongoDB & JWT Authentication
-✅ **Completed:** Password Reset via Email
-✅ **Completed:** Real-Time Messaging Between Brands and Influencers
