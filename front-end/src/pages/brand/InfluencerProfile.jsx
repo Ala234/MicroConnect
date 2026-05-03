@@ -1,7 +1,7 @@
 import "../../styles/dashboard.css";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FiLogOut, FiMapPin, FiStar, FiUsers } from "react-icons/fi";
+import { FiLogOut, FiMapPin, FiMessageCircle, FiStar, FiUsers } from "react-icons/fi";
 import { fetchCampaignById } from "../../data/mockCampaigns";
 import { getInfluencerById as getMockInfluencerById } from "../../data/mockInfluencers";
 import {
@@ -9,6 +9,7 @@ import {
   getInfluencerById as apiGetInfluencerById,
 } from "../../api/influencers";
 import { getReviewsForInfluencer } from "../../api/reviews";
+import BrandChatModal from "./BrandChatModal";
 
 const getRecordId = (record) => {
   if (!record) return "";
@@ -89,6 +90,7 @@ export default function InfluencerProfile() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -187,14 +189,25 @@ export default function InfluencerProfile() {
     <div className="dashboard-page campaign-review-page">
       <div className="dashboard-shell profile-page-shell">
         <div className="dashboard-topbar">
-          <button
-            className="back-btn-large"
-            onClick={() => navigate(-1)}
-            aria-label="Back"
-            type="button"
-          >
-            Back
-          </button>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <button
+              className="back-btn-large"
+              onClick={() => navigate(-1)}
+              aria-label="Back"
+              type="button"
+            >
+              Back
+            </button>
+            <button
+              className="campaign-status-btn message"
+              onClick={() => setChatOpen(true)}
+              aria-label={`Message ${influencer.name}`}
+              type="button"
+            >
+              <FiMessageCircle />
+              <span>Message</span>
+            </button>
+          </div>
 
           <div className="dashboard-logo">
             <div className="dashboard-logo-icon">M</div>
@@ -316,6 +329,15 @@ export default function InfluencerProfile() {
           </div>
         </div>
       </div>
+
+      {chatOpen && (
+        <BrandChatModal
+          influencerId={getRecordId(influencer.userId) || influencer.id || influencerId}
+          influencerName={influencer.name}
+          influencerImage={influencer.imageSrc}
+          onClose={() => setChatOpen(false)}
+        />
+      )}
     </div>
   );
 }

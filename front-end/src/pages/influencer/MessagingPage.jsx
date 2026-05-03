@@ -1,28 +1,42 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import InfluencerTopNav from '../../components/influencer/InfluencerTopNav';
-import { getCampaignById } from '../../data/mockCampaigns';
+import { fetchCampaignById } from '../../data/mockCampaigns';
 import { getProfileForUser, isInfluencerProfileComplete } from '../../data/influencerAccounts';
+import { fetchConversation, sendMessage } from '../../api/messages';
 import '../../styles/influencer.css';
+
+const formatTime = (iso) => {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const getCurrentUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('user') || 'null');
+  } catch {
+    return null;
+  }
+};
 
 export default function MessagingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: 'brand',
-      text: 'Hi! We\'re excited to have you view this campaign. Feel free to reach out with any questions!',
-      timestamp: '10:30 AM'
-    }
-  ]);
+  const [campaign, setCampaign] = useState(null);
+  const [campaignLoading, setCampaignLoading] = useState(true);
+  const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const listRef = useRef(null);
 
-  const campaign = getCampaignById(id);
-  const campaignBrandName = campaign?.brandName || campaign?.brand || 'Brand';
+  const currentUser = getCurrentUser();
+  const myId = currentUser?._id || currentUser?.id;
   const returnTo = location.state?.returnTo || `/influencer/campaign/${id}`;
   const profileComplete = isInfluencerProfileComplete(getProfileForUser());
+  const brandId = campaign?.brandId;
+  const campaignBrandName = campaign?.brandName || campaign?.brand || 'Brand';
 
   useEffect(() => {
     if (!profileComplete) {
@@ -30,8 +44,67 @@ export default function MessagingPage() {
     }
   }, [profileComplete, navigate]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setCampaignLoading(true);
+      const found = await fetchCampaignById(id);
+      if (!cancelled) {
+        setCampaign(found);
+        setCampaignLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    if (!brandId) return undefined;
+
+    let cancelled = false;
+    const load = async () => {
+      const result = await fetchConversation(brandId);
+      if (cancelled) return;
+      if (result.success) {
+        setMessages(result.messages);
+        setError('');
+      } else {
+        setError(result.message);
+      }
+    };
+
+    load();
+    const interval = setInterval(load, 4000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [brandId]);
+
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   if (!profileComplete) {
     return null;
+  }
+
+  if (campaignLoading) {
+    return (
+      <main className="influencer-page dashboard-page">
+        <div className="dashboard-shell influencer-shell">
+          <section className="campaigns-section padded-top">
+            <div className="content-card">
+              <p className="text-muted">Loading conversation...</p>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
   }
 
   if (!campaign) {
@@ -65,17 +138,20 @@ export default function MessagingPage() {
     );
   }
 
-  const handleSendMessage = () => {
-    if (messageText.trim()) {
-      const newMessage = {
-        id: messages.length + 1,
-        sender: 'influencer',
-        text: messageText,
-        timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages([...messages, newMessage]);
+  const handleSendMessage = async () => {
+    const text = messageText.trim();
+    if (!text || sending || !brandId) return;
+
+    setSending(true);
+    const result = await sendMessage(brandId, text);
+    if (result.success) {
+      setMessages((prev) => [...prev, result.message]);
       setMessageText('');
+      setError('');
+    } else {
+      setError(result.message);
     }
+    setSending(false);
   };
 
   const handleKeyPress = (e) => {
@@ -120,13 +196,28 @@ export default function MessagingPage() {
                 </div>
               </div>
 
-              <div className="messages-list">
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`message-bubble message-${msg.sender}`}>
-                    <div className="message-text">{msg.text}</div>
-                    <div className="message-timestamp">{msg.timestamp}</div>
-                  </div>
-                ))}
+              <div className="messages-list" ref={listRef}>
+                {messages.length === 0 ? (
+                  <p className="text-muted" style={{ textAlign: 'center', padding: '20px 0' }}>
+                    No messages yet. Send a message to start the conversation.
+                  </p>
+                ) : (
+                  messages.map((msg) => {
+                    const isMine = String(msg.sender) === String(myId);
+                    return (
+                      <div
+                        key={msg._id}
+                        className={`message-bubble message-${isMine ? 'influencer' : 'brand'}`}
+                      >
+                        <div className="message-text">{msg.text}</div>
+                        <div className="message-timestamp">{formatTime(msg.createdAt)}</div>
+                      </div>
+                    );
+                  })
+                )}
+                {error && (
+                  <p style={{ color: '#ff6b6b', textAlign: 'center', marginTop: 8 }}>{error}</p>
+                )}
               </div>
 
               <div className="message-input-area">
@@ -142,9 +233,9 @@ export default function MessagingPage() {
                   <button
                     className="btn btn-send"
                     onClick={handleSendMessage}
-                    disabled={!messageText.trim()}
+                    disabled={!messageText.trim() || sending}
                   >
-                    Send
+                    {sending ? 'Sending...' : 'Send'}
                   </button>
                 </div>
               </div>
