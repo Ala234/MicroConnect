@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import loginImage from "../../assets/images/login.png";
 
-const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+const API_URL = (import.meta.env.VITE_API_URL || "https://microconnect-1.onrender.com/api").replace(/\/$/, "");
 
 export default function Verification() {
   const navigate = useNavigate();
