@@ -22,3 +22,6 @@ front-end/.env
 *.log
 
 .env.local
+
+# Claude Code
+.claude/
