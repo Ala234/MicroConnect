@@ -26,15 +26,21 @@ const getTransporter = () => {
   return cachedTransporter;
 };
 
-const sendEmail = async ({ to, subject, html }) => {
+const sendEmail = async ({ to, subject, html, text }) => {
   const start = Date.now();
   console.log(`[EMAIL] Sending to ${to}...`);
   try {
     const info = await getTransporter().sendMail({
       from: `"MicroConnect" <${process.env.EMAIL_USER}>`,
+      replyTo: process.env.EMAIL_USER,
       to,
       subject,
+      text: text || (html ? html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() : ''),
       html,
+      headers: {
+        'List-Unsubscribe': `<mailto:${process.env.EMAIL_USER}?subject=unsubscribe>`,
+        'X-Entity-Ref-ID': `microconnect-${Date.now()}`,
+      },
     });
     console.log(
       `[EMAIL] Sent to ${to} in ${Date.now() - start}ms. ` +

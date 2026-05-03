@@ -398,7 +398,8 @@ exports.forgotPassword = async (req, res) => {
     // Send the email in the background — log on failure
     sendEmail({
       to: user.email,
-      subject: 'MicroConnect - Password Reset Code',
+      subject: `Your MicroConnect verification code: ${resetCode}`,
+      text: `Hi ${user.name},\n\nYour MicroConnect password reset code is: ${resetCode}\n\nThis code expires in 15 minutes.\n\nIf you did not request this, you can safely ignore this email.\n\n— MicroConnect`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px; background: #f9f9f9; border-radius: 10px;">
           <h2 style="color: #6366f1; text-align: center;">MicroConnect</h2>
