@@ -6,6 +6,7 @@ import {
   ArrowLeft, Mail, ShieldOff, Shield,
   MapPin, Users, Star, Globe, Building2, Flag,
 } from "lucide-react";
+import { apiUrl } from "../../api/apiBase";
 
 export default function UserDetail() {
   const navigate = useNavigate();
@@ -43,25 +44,25 @@ export default function UserDetail() {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         };
 
-        const userRes  = await fetch(`/api/admin/users/${id}`, { headers: authHeaders });
+        const userRes  = await fetch(apiUrl(`/admin/users/${id}`), { headers: authHeaders });
         const userData = await userRes.json();
         if (!userRes.ok) throw new Error(userData.message);
         setUser(userData);
 
         if (userData.role === "influencer") {
-          const infRes = await fetch(`/api/admin/users/${id}/influencer-profile`, { headers: authHeaders });
+          const infRes = await fetch(apiUrl(`/admin/users/${id}/influencer-profile`), { headers: authHeaders });
           if (infRes.ok) {
             const infData = await infRes.json();
             setInfluencer(infData);
           }
         } else if (userData.role === "brand") {
-          const brandRes = await fetch(`/api/admin/users/${id}/brand-profile`, { headers: authHeaders });
+          const brandRes = await fetch(apiUrl(`/admin/users/${id}/brand-profile`), { headers: authHeaders });
           if (brandRes.ok) {
             const brandData = await brandRes.json();
             setBrand(brandData);
 
             // Fetch brand's campaigns using the Brand document _id
-            const campRes = await fetch(`/api/admin/campaigns?brandId=${brandData._id}`, { headers: authHeaders });
+            const campRes = await fetch(apiUrl(`/admin/campaigns?brandId=${brandData._id}`), { headers: authHeaders });
             if (campRes.ok) {
               const campData = await campRes.json();
               setCampaigns(campData);
@@ -80,7 +81,7 @@ export default function UserDetail() {
   // ── Suspend / Unsuspend ────────────────────────────────
   const handleSuspend = async () => {
     try {
-      const res  = await fetch(`/api/admin/users/${id}/suspend`, {
+      const res  = await fetch(apiUrl(`/admin/users/${id}/suspend`), {
         method: "PATCH",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
@@ -98,7 +99,7 @@ export default function UserDetail() {
   // ── Flag / Approve Bio ─────────────────────────────────
   const handleFlag = async (bioStatus) => {
     try {
-      const res  = await fetch(`/api/admin/influencers/${influencer._id}/bio-status`, {
+      const res  = await fetch(apiUrl(`/admin/influencers/${influencer._id}/bio-status`), {
         method: "PATCH",
         headers,
         body: JSON.stringify({ bioStatus }),

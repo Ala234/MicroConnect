@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import { MoreVertical } from "lucide-react";
+import { apiUrl } from "../../api/apiBase";
 
 const CONTRACTS_PER_PAGE = 5;
 
@@ -35,7 +36,7 @@ export default function Contracts() {
         const headers = {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         };
-        const res  = await fetch("/api/admin/contracts", { headers });
+        const res  = await fetch(apiUrl("/admin/contracts"), { headers });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
         setContracts(data);

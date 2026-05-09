@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import { ArrowLeft, CheckCircle } from "lucide-react";
+import { apiUrl } from "../../api/apiBase";
 
 export default function DisputeDetail() {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export default function DisputeDetail() {
   useEffect(() => {
     const fetchDispute = async () => {
       try {
-        const res  = await fetch(`/api/admin/disputes/${id}`, { headers });
+        const res  = await fetch(apiUrl(`/admin/disputes/${id}`), { headers });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
         setDispute(data);
@@ -52,7 +53,7 @@ export default function DisputeDetail() {
   // ── Resolve ────────────────────────────────────────────
   const handleResolve = async () => {
     try {
-      const res  = await fetch(`/api/admin/disputes/${id}/resolve`, {
+      const res  = await fetch(apiUrl(`/admin/disputes/${id}/resolve`), {
         method: "PATCH",
         headers,
         body: JSON.stringify({ adminResponse }),

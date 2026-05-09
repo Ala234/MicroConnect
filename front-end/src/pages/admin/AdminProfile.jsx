@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import { Pencil, Check, X } from "lucide-react";
+import { apiUrl } from "../../api/apiBase";
 
 export default function AdminProfile() {
   const navigate = useNavigate();
@@ -53,7 +54,7 @@ export default function AdminProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res  = await fetch("/api/admin/profile", { headers });
+        const res  = await fetch(apiUrl("/admin/profile"), { headers });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
         setProfile(data);
@@ -71,7 +72,7 @@ export default function AdminProfile() {
   const handleNameSave = async () => {
     if (!newName.trim()) return;
     try {
-      const res  = await fetch("/api/admin/profile", {
+      const res  = await fetch(apiUrl("/admin/profile"), {
         method: "PUT",
         headers,
         body: JSON.stringify({ name: newName.trim() }),
@@ -100,7 +101,7 @@ export default function AdminProfile() {
       return showError("New password must be at least 6 characters.");
     }
     try {
-      const res  = await fetch("/api/admin/profile", {
+      const res  = await fetch(apiUrl("/admin/profile"), {
         method: "PUT",
         headers,
         body: JSON.stringify({

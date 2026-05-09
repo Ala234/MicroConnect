@@ -2,6 +2,7 @@ import "../../styles/dashboard.css";
 import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect } from "react";
 import Sidebar from "./Sidebar";
+import { apiUrl } from "../../api/apiBase";
 
 import SaraBImage  from "../../assets/images/SaraBlogs-Profile.jpg";
 import AhmedFImage from "../../assets/images/AhmedFit-Profile.jpg";
@@ -42,7 +43,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res  = await fetch("/api/admin/stats", {
+        const res  = await fetch(apiUrl("/admin/stats"), {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },

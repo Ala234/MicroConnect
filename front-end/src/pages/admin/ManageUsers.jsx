@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import { MoreVertical } from "lucide-react";
+import { apiUrl } from "../../api/apiBase";
 
 const USERS_PER_PAGE = 8;
 
@@ -34,7 +35,7 @@ export default function ManageUsers() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res  = await fetch('/api/admin/users', {
+        const res  = await fetch(apiUrl('/admin/users'), {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
@@ -74,7 +75,7 @@ export default function ManageUsers() {
   // ── Actions ────────────────────────────────────────────
   const handleSuspend = async (user) => {
     try {
-      const res = await fetch(`/api/admin/users/${user.id}/suspend`, {
+      const res = await fetch(apiUrl(`/admin/users/${user.id}/suspend`), {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -98,7 +99,7 @@ export default function ManageUsers() {
 
   const handleDelete = async (userId) => {
     try {
-      const res = await fetch(`/api/admin/users/${userId}`, {
+      const res = await fetch(apiUrl(`/admin/users/${userId}`), {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import { Pencil, Trash2, Plus, Check } from "lucide-react";
+import { apiUrl } from "../../api/apiBase";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -46,8 +47,8 @@ export default function Settings() {
     const fetchData = async () => {
       try {
         const [policiesRes, commissionRes] = await Promise.all([
-          fetch("/api/admin/policies",   { headers }),
-          fetch("/api/admin/commission", { headers }),
+          fetch(apiUrl("/admin/policies"),   { headers }),
+          fetch(apiUrl("/admin/commission"), { headers }),
         ]);
 
         const policiesData   = await policiesRes.json();
@@ -87,7 +88,7 @@ export default function Settings() {
     try {
       if (editingId === null) {
         // Add new
-        const res  = await fetch("/api/admin/policies", {
+        const res  = await fetch(apiUrl("/admin/policies"), {
           method: "POST",
           headers,
           body: JSON.stringify({ text: formText.trim() }),
@@ -98,7 +99,7 @@ export default function Settings() {
         showSuccess("Policy added successfully.");
       } else {
         // Update existing
-        const res  = await fetch(`/api/admin/policies/${editingId}`, {
+        const res  = await fetch(apiUrl(`/admin/policies/${editingId}`), {
           method: "PUT",
           headers,
           body: JSON.stringify({ text: formText.trim() }),
@@ -121,7 +122,7 @@ export default function Settings() {
 
   const handleDelete = async (id) => {
     try {
-      const res  = await fetch(`/api/admin/policies/${id}`, {
+      const res  = await fetch(apiUrl(`/admin/policies/${id}`), {
         method: "DELETE",
         headers,
       });
@@ -151,7 +152,7 @@ export default function Settings() {
     if (isNaN(val) || val < 0 || val > 100) return;
 
     try {
-      const res  = await fetch("/api/admin/commission", {
+      const res  = await fetch(apiUrl("/admin/commission"), {
         method: "PUT",
         headers,
         body: JSON.stringify({ rate: val }),

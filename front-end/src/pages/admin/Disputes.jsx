@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import { MoreVertical } from "lucide-react";
+import { apiUrl } from "../../api/apiBase";
 
 const DISPUTES_PER_PAGE = 5;
 
@@ -44,7 +45,7 @@ export default function Disputes() {
   useEffect(() => {
     const fetchDisputes = async () => {
       try {
-        const res  = await fetch("/api/admin/disputes", { headers });
+        const res  = await fetch(apiUrl("/admin/disputes"), { headers });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
         setDisputes(data);
@@ -71,7 +72,7 @@ export default function Disputes() {
 
   const handleResolve = async (id) => {
     try {
-      const res  = await fetch(`/api/admin/disputes/${id}/resolve`, {
+      const res  = await fetch(apiUrl(`/admin/disputes/${id}/resolve`), {
         method: "PATCH",
         headers,
         body: JSON.stringify({ adminResponse }),

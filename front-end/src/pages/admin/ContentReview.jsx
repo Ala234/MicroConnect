@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import { MoreVertical } from "lucide-react";
+import { apiUrl } from "../../api/apiBase";
 
 const CONTENT_PER_PAGE = 5;
 
@@ -39,7 +40,7 @@ export default function ContentReview() {
   useEffect(() => {
     const fetchInfluencers = async () => {
       try {
-        const res  = await fetch("/api/admin/influencers", { headers });
+        const res  = await fetch(apiUrl("/admin/influencers"), { headers });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
         setInfluencers(data);
@@ -75,7 +76,7 @@ export default function ContentReview() {
   // ── Actions ────────────────────────────────────────────
   const updateBioStatus = async (id, bioStatus) => {
     try {
-      const res  = await fetch(`/api/admin/influencers/${id}/bio-status`, {
+      const res  = await fetch(apiUrl(`/admin/influencers/${id}/bio-status`), {
         method: "PATCH",
         headers,
         body: JSON.stringify({ bioStatus }),
